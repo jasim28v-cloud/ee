@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>LUME | منصة اجتماعية عصرية</title>
+    <title>LUME | منصة اجتماعية عصرية من عالم آخر</title>
     <meta name="theme-color" content="#f59e0b">
     <meta name="description" content="LUME - منصة اجتماعية حديثة تجمع العالم">
     
@@ -11,6 +11,7 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.2/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
@@ -24,71 +25,82 @@
         
         body {
             font-family: 'Cairo', sans-serif;
-            background: linear-gradient(135deg, #fef3c7 0%, #fed7aa 100%);
+            background: radial-gradient(ellipse at 30% 40%, #1a1a2e, #0f0f1f, #050510);
             min-height: 100vh;
-            color: #1f2937;
+            color: #ffffff;
             transition: all 0.3s ease;
         }
         
-        body.dark-mode {
-            background: linear-gradient(135deg, #1a1a2e, #16213e, #0f0f1f);
-            color: #f3f4f6;
+        body.light-mode {
+            background: radial-gradient(ellipse at 30% 40%, #fef3c7, #fed7aa, #fdba74);
+            color: #1f2937;
         }
         
-        body.dark-mode .post-card {
-            background: rgba(31, 41, 55, 0.95);
-            border-bottom: 1px solid rgba(75, 85, 99, 0.5);
+        /* Glass Morphism Effect */
+        .glass-card {
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 28px;
+            transition: all 0.3s ease;
         }
         
-        body.dark-mode .top-bar {
-            background: rgba(17, 24, 39, 0.95);
-            backdrop-filter: blur(10px);
-            border-bottom: 1px solid rgba(75, 85, 99, 0.5);
+        .glass-card:hover {
+            border-color: rgba(245, 158, 11, 0.4);
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
         }
         
-        body.dark-mode .bottom-nav {
-            background: rgba(17, 24, 39, 0.95);
-            backdrop-filter: blur(10px);
-            border-top: 1px solid rgba(75, 85, 99, 0.5);
+        body.light-mode .glass-card {
+            background: rgba(255, 255, 255, 0.7);
+            border: 1px solid rgba(0, 0, 0, 0.05);
         }
         
-        body.dark-mode .compose-content,
-        body.dark-mode .chat-panel,
-        body.dark-mode .modal-content {
-            background: #1f2937;
-            color: #f3f4f6;
+        /* Animated Gradient Border */
+        @property --angle {
+            syntax: '<angle>';
+            initial-value: 0deg;
+            inherits: false;
         }
         
-        body.dark-mode .message-bubble {
-            background: #374151;
-            color: #f3f4f6;
+        .animated-border {
+            position: relative;
+            overflow: hidden;
         }
         
-        body.dark-mode .poll-container {
-            background: #374151;
+        .animated-border::before {
+            content: '';
+            position: absolute;
+            top: -2px;
+            left: -2px;
+            right: -2px;
+            bottom: -2px;
+            background: linear-gradient(var(--angle), #f59e0b, #ea580c, #fbbf24, #f59e0b);
+            border-radius: 30px;
+            z-index: -1;
+            animation: borderRotate 3s linear infinite;
         }
         
-        body.dark-mode .trending-sidebar {
-            background: rgba(31, 41, 55, 0.8);
+        @keyframes borderRotate {
+            0% { --angle: 0deg; }
+            100% { --angle: 360deg; }
         }
         
-        @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(20px) scale(0.95); }
-            to { opacity: 1; transform: translateY(0) scale(1); }
+        @keyframes fadeInUp {
+            from { opacity: 0; transform: translateY(30px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); opacity: 0.5; }
+            50% { transform: scale(1.05); opacity: 1; }
         }
         
         @keyframes spin {
             to { transform: rotate(360deg); }
         }
         
-        @keyframes gradientShift {
-            0% { background-position: 0% 50%; }
-            50% { background-position: 100% 50%; }
-            100% { background-position: 0% 50%; }
-        }
-        
         .fade-in {
-            animation: fadeIn 0.3s ease-out;
+            animation: fadeInUp 0.4s ease-out;
         }
         
         ::-webkit-scrollbar {
@@ -96,7 +108,7 @@
         }
         
         ::-webkit-scrollbar-track {
-            background: #e5e7eb;
+            background: rgba(255, 255, 255, 0.05);
             border-radius: 10px;
         }
         
@@ -109,79 +121,92 @@
         #mainApp {
             display: none;
             min-height: 100vh;
-            padding-bottom: 70px;
+            padding-bottom: 80px;
         }
         
         /* Top Bar */
         .top-bar {
             position: sticky;
             top: 0;
-            background: rgba(255, 255, 255, 0.95);
-            backdrop-filter: blur(10px);
-            border-bottom: 1px solid #e5e7eb;
-            padding: 12px 20px;
+            background: rgba(15, 15, 31, 0.9);
+            backdrop-filter: blur(20px);
+            border-bottom: 1px solid rgba(245, 158, 11, 0.2);
+            padding: 14px 24px;
             display: flex;
             justify-content: space-between;
             align-items: center;
             z-index: 100;
         }
         
+        body.light-mode .top-bar {
+            background: rgba(255, 255, 255, 0.9);
+            border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+        }
+        
         .logo {
-            font-size: 28px;
+            font-size: 32px;
             font-weight: 900;
-            background: linear-gradient(135deg, #f59e0b, #ea580c);
+            background: linear-gradient(135deg, #fbbf24, #f59e0b, #ea580c);
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
             cursor: pointer;
+            letter-spacing: 2px;
         }
         
         .top-icons {
             display: flex;
-            gap: 20px;
+            gap: 24px;
             align-items: center;
         }
         
         .top-icon {
             font-size: 22px;
-            color: #4b5563;
+            color: rgba(255, 255, 255, 0.7);
             cursor: pointer;
-            transition: transform 0.2s;
+            transition: all 0.2s;
+            position: relative;
         }
         
-        .top-icon:active {
-            transform: scale(0.95);
+        .top-icon:hover {
+            color: #f59e0b;
+            transform: translateY(-2px);
         }
         
-        body.dark-mode .top-icon {
-            color: #d1d5db;
+        body.light-mode .top-icon {
+            color: rgba(0, 0, 0, 0.6);
+        }
+        
+        body.light-mode .top-icon:hover {
+            color: #f59e0b;
         }
         
         /* Main Layout */
         .main-layout {
             display: flex;
-            max-width: 1200px;
+            max-width: 1300px;
             margin: 0 auto;
+            padding: 20px;
+            gap: 24px;
         }
         
         .feed-container {
             flex: 1;
-            max-width: 600px;
+            max-width: 620px;
             margin: 0 auto;
-            padding: 0 0 20px;
         }
         
         /* Trending Sidebar */
         .trending-sidebar {
-            width: 280px;
+            width: 320px;
             position: sticky;
-            top: 70px;
-            height: calc(100vh - 70px);
+            top: 80px;
+            height: calc(100vh - 100px);
             overflow-y: auto;
-            padding: 16px;
-            background: rgba(255, 255, 255, 0.8);
-            backdrop-filter: blur(10px);
-            border-radius: 24px;
-            margin-right: 20px;
+            padding: 20px;
+            background: rgba(15, 15, 31, 0.6);
+            backdrop-filter: blur(20px);
+            border-radius: 32px;
+            border: 1px solid rgba(245, 158, 11, 0.2);
             display: none;
         }
         
@@ -191,51 +216,71 @@
             }
         }
         
+        body.light-mode .trending-sidebar {
+            background: rgba(255, 255, 255, 0.7);
+            border: 1px solid rgba(0, 0, 0, 0.05);
+        }
+        
         .trending-item {
-            padding: 12px;
-            border-bottom: 1px solid #e5e7eb;
+            padding: 14px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
             cursor: pointer;
             transition: all 0.2s;
-            border-radius: 12px;
+            border-radius: 16px;
         }
         
         .trending-item:hover {
-            background: rgba(245, 158, 11, 0.1);
+            background: rgba(245, 158, 11, 0.15);
+            transform: translateX(-5px);
         }
         
         .trending-hashtag {
-            font-weight: 600;
+            font-weight: 700;
             color: #f59e0b;
         }
         
-        /* Post Card */
+        /* Post Card - Neumorphism Style */
         .post-card {
-            background: rgba(255, 255, 255, 0.95);
-            backdrop-filter: blur(5px);
-            border-bottom: 1px solid #e5e7eb;
-            margin-bottom: 0;
-            transition: all 0.2s;
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(12px);
+            border-radius: 28px;
+            margin-bottom: 20px;
+            transition: all 0.3s ease;
+            border: 1px solid rgba(255, 255, 255, 0.08);
             cursor: pointer;
         }
         
-        .post-card:active {
-            transform: scale(0.99);
+        .post-card:hover {
+            transform: translateY(-4px);
+            border-color: rgba(245, 158, 11, 0.3);
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+        }
+        
+        body.light-mode .post-card {
+            background: rgba(255, 255, 255, 0.8);
+            border: 1px solid rgba(0, 0, 0, 0.05);
+            box-shadow: 0 5px 20px rgba(0, 0, 0, 0.05);
+        }
+        
+        body.light-mode .post-card:hover {
+            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.1);
         }
         
         .post-card.pinned {
             border-right: 4px solid #f59e0b;
+            background: linear-gradient(135deg, rgba(245, 158, 11, 0.1), rgba(234, 88, 12, 0.05));
         }
         
         .pinned-badge {
             position: absolute;
-            top: 12px;
-            left: 12px;
+            top: 16px;
+            left: 16px;
             background: linear-gradient(135deg, #f59e0b, #ea580c);
             color: white;
-            padding: 4px 10px;
-            border-radius: 20px;
+            padding: 4px 12px;
+            border-radius: 30px;
             font-size: 10px;
-            font-weight: 600;
+            font-weight: 700;
             z-index: 10;
         }
         
@@ -243,25 +288,26 @@
             display: flex;
             align-items: center;
             justify-content: space-between;
-            padding: 12px 16px;
+            padding: 16px 20px;
         }
         
         .post-user-info {
             display: flex;
             align-items: center;
-            gap: 12px;
+            gap: 14px;
             cursor: pointer;
         }
         
         .post-avatar {
-            width: 44px;
-            height: 44px;
+            width: 52px;
+            height: 52px;
             border-radius: 50%;
             overflow: hidden;
             background: linear-gradient(135deg, #f59e0b, #ea580c);
             display: flex;
             align-items: center;
             justify-content: center;
+            box-shadow: 0 5px 15px rgba(245, 158, 11, 0.3);
         }
         
         .post-avatar img {
@@ -271,22 +317,26 @@
         }
         
         .post-username {
-            font-weight: 700;
-            font-size: 15px;
+            font-weight: 800;
+            font-size: 16px;
             display: flex;
             align-items: center;
-            gap: 6px;
+            gap: 8px;
         }
         
         .verified-badge {
             color: #f59e0b;
-            font-size: 14px;
+            font-size: 16px;
         }
         
         .post-time {
             font-size: 11px;
-            color: #9ca3af;
-            margin-top: 2px;
+            color: rgba(255, 255, 255, 0.5);
+            margin-top: 4px;
+        }
+        
+        body.light-mode .post-time {
+            color: rgba(0, 0, 0, 0.5);
         }
         
         .post-menu {
@@ -294,23 +344,24 @@
             border: none;
             font-size: 18px;
             cursor: pointer;
-            color: #6b7280;
-            transition: transform 0.2s;
-            padding: 6px;
+            color: rgba(255, 255, 255, 0.5);
+            transition: all 0.2s;
+            padding: 8px;
+            border-radius: 50%;
         }
         
-        .post-menu:active {
-            transform: scale(0.9);
+        .post-menu:hover {
+            background: rgba(245, 158, 11, 0.2);
+            color: #f59e0b;
         }
         
         .post-image {
-            width: 100%;
-            max-height: 400px;
+            width: calc(100% - 32px);
+            max-height: 450px;
             object-fit: cover;
             cursor: pointer;
-            border-radius: 16px;
-            margin: 8px 12px;
-            width: calc(100% - 24px);
+            border-radius: 20px;
+            margin: 8px 16px;
         }
         
         .video-container {
@@ -318,7 +369,7 @@
             background: #000;
             border-radius: 20px;
             overflow: hidden;
-            margin: 8px 12px;
+            margin: 8px 16px;
             cursor: pointer;
         }
         
@@ -331,14 +382,14 @@
         
         .video-overlay {
             position: absolute;
-            bottom: 10px;
-            right: 10px;
+            bottom: 12px;
+            right: 12px;
             background: rgba(0, 0, 0, 0.6);
-            backdrop-filter: blur(4px);
-            border-radius: 30px;
-            padding: 6px 12px;
+            backdrop-filter: blur(8px);
+            border-radius: 40px;
+            padding: 8px 16px;
             display: flex;
-            gap: 12px;
+            gap: 16px;
             opacity: 0;
             transition: opacity 0.2s;
         }
@@ -351,8 +402,9 @@
             background: none;
             border: none;
             color: white;
-            font-size: 14px;
+            font-size: 16px;
             cursor: pointer;
+            transition: color 0.2s;
         }
         
         .video-overlay button:hover {
@@ -362,8 +414,8 @@
         .image-viewer-modal {
             position: fixed;
             inset: 0;
-            background: rgba(0, 0, 0, 0.85);
-            backdrop-filter: blur(12px);
+            background: rgba(0, 0, 0, 0.95);
+            backdrop-filter: blur(20px);
             z-index: 1000;
             display: flex;
             align-items: center;
@@ -382,22 +434,22 @@
             max-width: 90%;
             max-height: 90%;
             object-fit: contain;
-            border-radius: 20px;
+            border-radius: 24px;
             box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
-            animation: fadeIn 0.3s ease-out;
+            animation: fadeInUp 0.3s ease-out;
         }
         
         .image-viewer-close {
             position: absolute;
-            top: 20px;
-            right: 20px;
-            font-size: 28px;
+            top: 24px;
+            right: 24px;
+            font-size: 32px;
             color: white;
             cursor: pointer;
             background: rgba(0, 0, 0, 0.5);
-            backdrop-filter: blur(4px);
-            width: 44px;
-            height: 44px;
+            backdrop-filter: blur(8px);
+            width: 50px;
+            height: 50px;
             border-radius: 50%;
             display: flex;
             align-items: center;
@@ -405,75 +457,95 @@
             transition: all 0.2s;
         }
         
+        .image-viewer-close:hover {
+            background: #f59e0b;
+            transform: scale(1.1);
+        }
+        
         .post-actions {
             display: flex;
-            gap: 24px;
-            padding: 8px 16px;
+            gap: 32px;
+            padding: 12px 20px;
         }
         
         .post-action {
             background: none;
             border: none;
-            font-size: 22px;
+            font-size: 24px;
             cursor: pointer;
-            color: #6b7280;
-            transition: transform 0.2s;
+            color: rgba(255, 255, 255, 0.6);
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 8px;
         }
         
-        .post-action:active {
-            transform: scale(0.9);
+        .post-action:hover {
+            color: #f59e0b;
+            transform: scale(1.05);
         }
         
         .post-action.active {
             color: #f59e0b;
         }
         
+        body.light-mode .post-action {
+            color: rgba(0, 0, 0, 0.5);
+        }
+        
         .post-likes {
-            font-weight: 600;
-            font-size: 13px;
-            padding: 0 16px 4px;
+            font-weight: 700;
+            font-size: 14px;
+            padding: 0 20px 8px;
         }
         
         .post-caption {
-            padding: 0 16px 8px;
-            font-size: 14px;
+            padding: 0 20px 12px;
+            font-size: 15px;
+            line-height: 1.5;
         }
         
         .post-caption span {
-            font-weight: 700;
+            font-weight: 800;
             cursor: pointer;
+            color: #f59e0b;
         }
         
         .post-hashtags {
             color: #f59e0b;
             cursor: pointer;
+            font-weight: 600;
         }
         
         .post-comments {
-            padding: 0 16px 8px;
+            padding: 0 20px 12px;
             font-size: 13px;
-            color: #9ca3af;
+            color: rgba(255, 255, 255, 0.5);
             cursor: pointer;
         }
         
+        body.light-mode .post-comments {
+            color: rgba(0, 0, 0, 0.5);
+        }
+        
         .post-views {
-            padding: 0 16px 12px;
-            font-size: 11px;
-            color: #9ca3af;
+            padding: 0 20px 16px;
+            font-size: 12px;
+            color: rgba(255, 255, 255, 0.4);
         }
         
         .poll-container {
-            background: #f3f4f6;
-            border-radius: 16px;
-            padding: 12px;
-            margin: 8px 12px;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 20px;
+            padding: 16px;
+            margin: 12px 16px;
         }
         
         .poll-option {
-            background: white;
-            border-radius: 12px;
-            padding: 10px;
-            margin: 8px 0;
+            background: rgba(255, 255, 255, 0.08);
+            border-radius: 16px;
+            padding: 12px;
+            margin: 10px 0;
             cursor: pointer;
             transition: all 0.2s;
             position: relative;
@@ -481,7 +553,7 @@
         }
         
         .poll-option:hover {
-            background: rgba(245, 158, 11, 0.1);
+            background: rgba(245, 158, 11, 0.2);
         }
         
         .poll-option.selected {
@@ -494,7 +566,7 @@
             left: 0;
             top: 0;
             height: 100%;
-            background: rgba(245, 158, 11, 0.2);
+            background: rgba(245, 158, 11, 0.3);
             transition: width 0.3s;
             z-index: 0;
         }
@@ -507,10 +579,10 @@
         }
         
         .quote-post {
-            background: #f3f4f6;
-            border-radius: 16px;
-            padding: 12px;
-            margin: 8px 12px;
+            background: rgba(255, 255, 255, 0.03);
+            border-radius: 20px;
+            padding: 14px;
+            margin: 12px 16px;
             border-right: 4px solid #f59e0b;
             cursor: pointer;
         }
@@ -520,13 +592,14 @@
             position: fixed;
             inset: 0;
             background: rgba(0, 0, 0, 0.9);
+            backdrop-filter: blur(20px);
             z-index: 200;
             display: flex;
             align-items: center;
             justify-content: center;
             opacity: 0;
             visibility: hidden;
-            transition: all 0.2s;
+            transition: all 0.3s;
         }
         
         .compose-modal.open {
@@ -535,46 +608,50 @@
         }
         
         .compose-content {
-            background: white;
-            border-radius: 24px;
+            background: rgba(15, 15, 31, 0.95);
+            backdrop-filter: blur(20px);
+            border-radius: 36px;
             width: 90%;
-            max-width: 500px;
-            max-height: 80vh;
+            max-width: 550px;
+            max-height: 85vh;
             overflow-y: auto;
+            border: 1px solid rgba(245, 158, 11, 0.3);
         }
         
         .compose-header {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            padding: 16px;
-            border-bottom: 1px solid #e5e7eb;
+            padding: 20px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
         }
         
         .compose-textarea {
             width: 100%;
-            min-height: 120px;
+            min-height: 140px;
             border: none;
             resize: none;
-            font-size: 16px;
+            font-size: 17px;
             outline: none;
             font-family: 'Cairo', sans-serif;
-            padding: 16px;
+            padding: 20px;
+            background: transparent;
+            color: white;
+        }
+        
+        .compose-textarea::placeholder {
+            color: rgba(255, 255, 255, 0.5);
         }
         
         .upload-progress-container {
-            margin: 12px;
-            padding: 12px;
-            background: #f3f4f6;
-            border-radius: 16px;
-        }
-        
-        body.dark-mode .upload-progress-container {
-            background: #374151;
+            margin: 16px;
+            padding: 16px;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 20px;
         }
         
         .progress-bar-bg {
-            background: #e5e7eb;
+            background: rgba(255, 255, 255, 0.1);
             border-radius: 30px;
             height: 8px;
             overflow: hidden;
@@ -590,22 +667,23 @@
         
         .compose-tools {
             display: flex;
-            gap: 16px;
-            padding: 12px 16px;
-            border-top: 1px solid #e5e7eb;
+            gap: 20px;
+            padding: 16px 20px;
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
         }
         
         .compose-tool {
             background: none;
             border: none;
-            font-size: 24px;
+            font-size: 26px;
             cursor: pointer;
-            color: #6b7280;
-            transition: transform 0.2s;
+            color: rgba(255, 255, 255, 0.6);
+            transition: all 0.2s;
         }
         
-        .compose-tool:active {
-            transform: scale(0.9);
+        .compose-tool:hover {
+            color: #f59e0b;
+            transform: scale(1.1);
         }
         
         /* Bottom Navigation */
@@ -614,41 +692,60 @@
             bottom: 0;
             left: 0;
             right: 0;
-            background: rgba(255, 255, 255, 0.95);
-            backdrop-filter: blur(10px);
-            border-top: 1px solid #e5e7eb;
+            background: rgba(15, 15, 31, 0.95);
+            backdrop-filter: blur(20px);
+            border-top: 1px solid rgba(245, 158, 11, 0.2);
             display: flex;
             justify-content: space-around;
-            padding: 10px 0 14px;
+            padding: 12px 0 20px;
             z-index: 100;
+        }
+        
+        body.light-mode .bottom-nav {
+            background: rgba(255, 255, 255, 0.95);
+            border-top: 1px solid rgba(0, 0, 0, 0.05);
         }
         
         .nav-item {
             background: none;
             border: none;
-            font-size: 24px;
-            color: #6b7280;
+            font-size: 26px;
+            color: rgba(255, 255, 255, 0.5);
             cursor: pointer;
-            transition: transform 0.2s;
-            padding: 6px;
+            transition: all 0.2s;
+            padding: 8px;
+            border-radius: 50%;
+            position: relative;
         }
         
-        .nav-item:active {
-            transform: scale(0.9);
+        .nav-item:hover {
+            color: #f59e0b;
+            transform: translateY(-3px);
         }
         
         .nav-item.active {
             color: #f59e0b;
+            background: rgba(245, 158, 11, 0.15);
+        }
+        
+        body.light-mode .nav-item {
+            color: rgba(0, 0, 0, 0.5);
+        }
+        
+        body.light-mode .nav-item.active {
+            color: #f59e0b;
+            background: rgba(245, 158, 11, 0.1);
         }
         
         /* Chat Panel */
         .chat-panel {
             position: fixed;
             inset: 0;
-            background: white;
+            background: rgba(15, 15, 31, 0.98);
+            backdrop-filter: blur(20px);
             z-index: 400;
             transform: translateX(100%);
-            transition: transform 0.3s ease;
+            transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
             display: flex;
             flex-direction: column;
         }
@@ -658,8 +755,8 @@
         }
         
         .chat-header {
-            padding: 16px;
-            border-bottom: 1px solid #e5e7eb;
+            padding: 20px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
             display: flex;
             justify-content: space-between;
             align-items: center;
@@ -668,7 +765,7 @@
         .chat-messages {
             flex: 1;
             overflow-y: auto;
-            padding: 16px;
+            padding: 20px;
             display: flex;
             flex-direction: column;
             gap: 12px;
@@ -676,7 +773,7 @@
         
         .chat-message {
             display: flex;
-            gap: 8px;
+            gap: 10px;
             max-width: 80%;
         }
         
@@ -686,9 +783,9 @@
         }
         
         .message-bubble {
-            background: #f3f4f6;
-            padding: 10px 14px;
-            border-radius: 20px;
+            background: rgba(255, 255, 255, 0.1);
+            padding: 12px 18px;
+            border-radius: 24px;
             font-size: 14px;
         }
         
@@ -700,34 +797,46 @@
         .chat-input-area {
             display: flex;
             gap: 12px;
-            padding: 12px;
-            border-top: 1px solid #e5e7eb;
+            padding: 16px;
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
             align-items: center;
         }
         
         .chat-input {
             flex: 1;
-            padding: 10px 14px;
-            border: 1px solid #e5e7eb;
-            border-radius: 25px;
+            padding: 12px 18px;
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 40px;
             outline: none;
             font-size: 14px;
             font-family: 'Cairo', sans-serif;
+            color: white;
+        }
+        
+        .chat-input::placeholder {
+            color: rgba(255, 255, 255, 0.5);
         }
         
         .chat-send-btn {
             background: none;
             border: none;
-            font-size: 22px;
+            font-size: 24px;
             cursor: pointer;
             color: #f59e0b;
+            transition: transform 0.2s;
         }
         
-        /* Admin Panel */
+        .chat-send-btn:hover {
+            transform: scale(1.1);
+        }
+        
+        /* Admin Dashboard */
         .admin-panel {
             position: fixed;
             inset: 0;
-            background: white;
+            background: rgba(10, 10, 20, 0.98);
+            backdrop-filter: blur(20px);
             z-index: 500;
             transform: translateX(100%);
             transition: transform 0.3s ease;
@@ -741,50 +850,60 @@
         .admin-stats {
             display: grid;
             grid-template-columns: repeat(3, 1fr);
-            gap: 12px;
-            padding: 16px;
+            gap: 16px;
+            padding: 20px;
         }
         
         .admin-stat-card {
             background: linear-gradient(135deg, #f59e0b, #ea580c);
-            padding: 16px;
-            border-radius: 16px;
+            padding: 20px;
+            border-radius: 24px;
             text-align: center;
             color: white;
+            transition: transform 0.2s;
+        }
+        
+        .admin-stat-card:hover {
+            transform: translateY(-5px);
         }
         
         .admin-stat-number {
-            font-size: 28px;
-            font-weight: 700;
+            font-size: 32px;
+            font-weight: 800;
         }
         
         .admin-item {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            padding: 12px;
-            border-bottom: 1px solid #e5e7eb;
+            padding: 16px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
         }
         
         .admin-delete-btn,
         .admin-mute-btn,
         .admin-verify-btn {
-            padding: 6px 12px;
-            border-radius: 8px;
+            padding: 8px 16px;
+            border-radius: 40px;
             border: none;
             cursor: pointer;
-            margin: 0 4px;
-            font-size: 12px;
+            margin: 0 6px;
+            font-size: 13px;
+            font-weight: 600;
+            transition: all 0.2s;
         }
         
         .admin-delete-btn { background: #ef4444; color: white; }
+        .admin-delete-btn:hover { background: #dc2626; transform: scale(1.05); }
         .admin-mute-btn { background: #f59e0b; color: white; }
+        .admin-mute-btn:hover { background: #ea580c; transform: scale(1.05); }
         .admin-verify-btn { background: #10b981; color: white; }
+        .admin-verify-btn:hover { background: #059669; transform: scale(1.05); }
         
         /* Profile */
         .profile-cover {
             width: 100%;
-            height: 180px;
+            height: 200px;
             background: linear-gradient(135deg, #f59e0b, #ea580c);
             background-size: cover;
             background-position: center;
@@ -793,67 +912,84 @@
         
         .profile-avatar-wrapper {
             position: relative;
-            margin-top: -50px;
-            padding: 0 16px;
+            margin-top: -60px;
+            padding: 0 20px;
         }
         
         .profile-avatar-large {
-            width: 100px;
-            height: 100px;
+            width: 120px;
+            height: 120px;
             border-radius: 50%;
             overflow: hidden;
-            border: 4px solid white;
+            border: 4px solid #f59e0b;
             background: linear-gradient(135deg, #f59e0b, #ea580c);
             cursor: pointer;
+            transition: transform 0.2s;
+        }
+        
+        .profile-avatar-large:hover {
+            transform: scale(1.05);
         }
         
         .profile-info {
-            padding: 12px 16px 16px;
+            padding: 16px 20px 20px;
         }
         
         .profile-name {
-            font-size: 20px;
-            font-weight: 700;
+            font-size: 24px;
+            font-weight: 800;
             display: flex;
             align-items: center;
-            gap: 8px;
+            gap: 10px;
         }
         
         .profile-stats {
             display: flex;
-            gap: 24px;
-            margin-top: 12px;
-            padding: 12px 0;
-            border-top: 1px solid #e5e7eb;
-            border-bottom: 1px solid #e5e7eb;
+            gap: 32px;
+            margin-top: 16px;
+            padding: 16px 0;
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
         }
         
         .stat-item {
             text-align: center;
             cursor: pointer;
+            transition: all 0.2s;
+        }
+        
+        .stat-item:hover {
+            transform: scale(1.05);
+            color: #f59e0b;
         }
         
         .stat-number {
-            font-weight: 700;
-            font-size: 18px;
+            font-weight: 800;
+            font-size: 20px;
         }
         
         .profile-buttons {
             display: flex;
-            gap: 10px;
-            margin-top: 16px;
+            gap: 12px;
+            margin-top: 20px;
         }
         
         .profile-btn {
             flex: 1;
-            padding: 8px;
-            border-radius: 12px;
-            font-weight: 600;
+            padding: 10px;
+            border-radius: 40px;
+            font-weight: 700;
             font-size: 14px;
             cursor: pointer;
-            border: 1px solid #e5e7eb;
-            background: none;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            background: transparent;
+            color: white;
             transition: all 0.2s;
+        }
+        
+        .profile-btn:hover {
+            background: rgba(245, 158, 11, 0.2);
+            border-color: #f59e0b;
         }
         
         .profile-btn-primary {
@@ -862,21 +998,27 @@
             border: none;
         }
         
+        .profile-btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 20px rgba(245, 158, 11, 0.3);
+        }
+        
         .profile-tabs {
             display: flex;
-            margin-top: 8px;
+            margin-top: 12px;
         }
         
         .profile-tab {
             flex: 1;
             text-align: center;
-            padding: 12px;
+            padding: 14px;
             cursor: pointer;
             font-size: 14px;
-            font-weight: 600;
-            color: #9ca3af;
+            font-weight: 700;
+            color: rgba(255, 255, 255, 0.5);
             background: none;
             border: none;
+            transition: all 0.2s;
         }
         
         .profile-tab.active {
@@ -887,8 +1029,8 @@
         .profile-grid {
             display: grid;
             grid-template-columns: repeat(3, 1fr);
-            gap: 2px;
-            margin-top: 8px;
+            gap: 3px;
+            margin-top: 12px;
         }
         
         .grid-item {
@@ -903,6 +1045,12 @@
             width: 100%;
             height: 100%;
             object-fit: cover;
+            transition: transform 0.2s;
+        }
+        
+        .grid-item:hover img,
+        .grid-item:hover video {
+            transform: scale(1.05);
         }
         
         .grid-item-overlay {
@@ -910,68 +1058,71 @@
             bottom: 0;
             left: 0;
             right: 0;
-            background: rgba(0, 0, 0, 0.6);
+            background: linear-gradient(to top, rgba(0,0,0,0.7), transparent);
             color: white;
             display: flex;
             justify-content: center;
-            gap: 16px;
-            padding: 4px;
+            gap: 20px;
+            padding: 8px;
             font-size: 12px;
         }
         
         /* Loading */
         .loading {
             text-align: center;
-            padding: 60px 20px;
+            padding: 80px 20px;
         }
         
         .spinner {
-            width: 32px;
-            height: 32px;
-            border: 3px solid #e5e7eb;
+            width: 40px;
+            height: 40px;
+            border: 3px solid rgba(245, 158, 11, 0.2);
             border-top-color: #f59e0b;
             border-radius: 50%;
             animation: spin 0.8s linear infinite;
-            margin: 0 auto 12px;
+            margin: 0 auto 16px;
         }
         
         .load-more-btn {
             text-align: center;
             padding: 16px;
-            margin: 16px;
-            background: rgba(245, 158, 11, 0.1);
-            border-radius: 30px;
+            margin: 20px;
+            background: rgba(245, 158, 11, 0.15);
+            border-radius: 60px;
             cursor: pointer;
             transition: all 0.2s;
+        }
+        
+        .load-more-btn:hover {
+            background: rgba(245, 158, 11, 0.3);
         }
         
         /* Toast */
         #customToast {
             position: fixed;
-            bottom: 80px;
+            bottom: 100px;
             left: 50%;
             transform: translateX(-50%);
-            background: #1f2937;
+            background: rgba(0, 0, 0, 0.9);
+            backdrop-filter: blur(20px);
             color: white;
-            padding: 10px 20px;
-            border-radius: 40px;
+            padding: 12px 24px;
+            border-radius: 60px;
             z-index: 1100;
-            font-size: 13px;
+            font-size: 14px;
             opacity: 0;
             transition: opacity 0.2s;
             pointer-events: none;
             white-space: nowrap;
-        }
-        
-        body.dark-mode #customToast {
-            background: #374151;
+            border: 1px solid rgba(245, 158, 11, 0.3);
         }
         
         /* Modal */
         .modal-overlay {
             position: fixed;
             inset: 0;
-            background: rgba(0, 0, 0, 0.9);
+            background: rgba(0, 0, 0, 0.95);
+            backdrop-filter: blur(20px);
             z-index: 600;
             display: flex;
             align-items: center;
@@ -987,44 +1138,49 @@
         }
         
         .modal-content {
-            background: white;
-            border-radius: 24px;
-            padding: 24px;
+            background: rgba(15, 15, 31, 0.95);
+            backdrop-filter: blur(20px);
+            border-radius: 32px;
+            padding: 28px;
             width: 90%;
-            max-width: 400px;
+            max-width: 420px;
+            border: 1px solid rgba(245, 158, 11, 0.3);
         }
         
         /* Heart Animation */
         .heart-animation {
             position: fixed;
-            font-size: 48px;
+            font-size: 60px;
             color: #f59e0b;
             pointer-events: none;
             z-index: 1000;
-            animation: fadeIn 0.6s ease-out forwards;
+            animation: fadeInUp 0.6s ease-out forwards;
+            filter: drop-shadow(0 0 10px #f59e0b);
         }
         
         /* Follower Item */
         .follower-item {
             display: flex;
             align-items: center;
-            gap: 12px;
-            padding: 12px;
+            gap: 14px;
+            padding: 14px;
             cursor: pointer;
             transition: all 0.2s;
-            border-bottom: 1px solid #e5e7eb;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+            border-radius: 16px;
         }
         
-        .follower-item:active {
-            transform: scale(0.98);
+        .follower-item:hover {
+            background: rgba(245, 158, 11, 0.1);
+            transform: translateX(5px);
         }
         
         /* Toggle Switch */
         .toggle-switch {
-            width: 50px;
-            height: 24px;
-            background: #d1d5db;
-            border-radius: 24px;
+            width: 52px;
+            height: 26px;
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 30px;
             cursor: pointer;
             position: relative;
             transition: all 0.2s;
@@ -1036,18 +1192,18 @@
         
         .toggle-switch::after {
             content: '';
-            width: 20px;
-            height: 20px;
+            width: 22px;
+            height: 22px;
             background: white;
             border-radius: 50%;
             position: absolute;
             top: 2px;
-            left: 4px;
+            left: 3px;
             transition: all 0.2s;
         }
         
         .toggle-switch.active::after {
-            left: 26px;
+            left: 27px;
         }
         
         /* Video Call */
@@ -1073,42 +1229,61 @@
         }
         
         #localVideo {
-            width: 120px;
-            height: 180px;
+            width: 140px;
+            height: 200px;
             position: absolute;
             bottom: 20px;
             right: 20px;
             background: #333;
-            border-radius: 16px;
-            border: 2px solid white;
+            border-radius: 20px;
+            border: 2px solid #f59e0b;
+            box-shadow: 0 5px 20px rgba(0,0,0,0.5);
         }
         
         .call-end-btn {
             background: #ef4444;
             color: white;
             border: none;
-            width: 60px;
-            height: 60px;
+            width: 70px;
+            height: 70px;
             border-radius: 50%;
-            font-size: 24px;
+            font-size: 28px;
             cursor: pointer;
+            transition: all 0.2s;
+        }
+        
+        .call-end-btn:hover {
+            transform: scale(1.1);
+            background: #dc2626;
         }
         
         .quick-emojis {
             display: flex;
-            gap: 8px;
-            padding: 8px 16px;
-            border-top: 1px solid #e5e7eb;
+            gap: 12px;
+            padding: 12px 20px;
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
         }
         
         .quick-emojis span {
-            font-size: 20px;
+            font-size: 24px;
             cursor: pointer;
+            transition: transform 0.2s;
+        }
+        
+        .quick-emojis span:hover {
+            transform: scale(1.2);
         }
         
         @media (max-width: 768px) {
             .logo {
                 font-size: 24px;
+            }
+            .main-layout {
+                padding: 12px;
+            }
+            .post-avatar {
+                width: 44px;
+                height: 44px;
             }
         }
     </style>
@@ -1116,19 +1291,19 @@
 <body>
 
 <!-- Loading Screen -->
-<div id="initLoader" style="position: fixed; inset: 0; background: linear-gradient(135deg, #f59e0b, #ea580c); z-index: 9999; display: flex; align-items: center; justify-content: center; flex-direction: column;">
-    <div class="spinner"></div>
-    <div style="margin-top: 16px; color: white; font-weight: 500;">جاري تحميل LUME...</div>
+<div id="initLoader" style="position: fixed; inset: 0; background: radial-gradient(ellipse at 30% 40%, #f59e0b, #ea580c, #7c2d12); z-index: 9999; display: flex; align-items: center; justify-content: center; flex-direction: column;">
+    <div class="spinner" style="border-color: rgba(255,255,255,0.2); border-top-color: white;"></div>
+    <div style="margin-top: 20px; color: white; font-weight: 600; font-size: 18px;">🌟 جاري تحميل LUME 🌟</div>
 </div>
 
 <!-- Main App -->
 <div id="mainApp">
     <div class="top-bar">
-        <div class="logo" onclick="goToHome()">🌟 LUME 🌟</div>
+        <div class="logo" onclick="goToHome()">🌟 LUME</div>
         <div class="top-icons">
             <i class="fa-regular fa-message top-icon" onclick="openConversations()"></i>
             <i class="fa-regular fa-bookmark top-icon" onclick="openSavedPosts()"></i>
-            <i class="fa-solid fa-moon top-icon" onclick="toggleTheme()" id="themeToggle"></i>
+            <i class="fa-solid fa-sun top-icon" onclick="toggleTheme()" id="themeToggle"></i>
             <i class="fa-solid fa-right-from-bracket top-icon" onclick="logout()" style="color: #ef4444;"></i>
         </div>
     </div>
@@ -1138,15 +1313,15 @@
             <div class="loading"><div class="spinner"></div><span>جاري التحميل...</span></div>
         </div>
         <div class="trending-sidebar" id="trendingSidebar">
-            <div style="font-weight: 700; margin-bottom: 16px; font-size: 18px;">🔥 الترند</div>
+            <div style="font-weight: 800; margin-bottom: 20px; font-size: 20px;">🔥 الترند الساخن</div>
             <div id="trendingList"></div>
-            <div style="margin-top: 20px; padding-top: 16px; border-top: 1px solid #e5e7eb;">
-                <div style="font-weight: 600; margin-bottom: 12px;">⚙️ الإعدادات</div>
-                <div style="display: flex; justify-content: space-between; margin-bottom: 12px;">
+            <div style="margin-top: 28px; padding-top: 20px; border-top: 1px solid rgba(255, 255, 255, 0.1);">
+                <div style="font-weight: 700; margin-bottom: 16px;">⚙️ الإعدادات</div>
+                <div style="display: flex; justify-content: space-between; margin-bottom: 16px;">
                     <span>📖 وضع القراءة</span>
                     <div class="toggle-switch" id="readModeToggle" onclick="toggleReadMode()"></div>
                 </div>
-                <div style="display: flex; justify-content: space-between; margin-bottom: 12px;">
+                <div style="display: flex; justify-content: space-between; margin-bottom: 16px;">
                     <span>🔕 عدم الإزعاج</span>
                     <div class="toggle-switch" id="dndToggle" onclick="toggleDoNotDisturb()"></div>
                 </div>
@@ -1170,23 +1345,23 @@
     <div id="composeModal" class="compose-modal">
         <div class="compose-content">
             <div class="compose-header">
-                <h3 style="font-weight: 700;">إنشاء منشور جديد</h3>
-                <button onclick="closeCompose()" style="background: none; border: none; font-size: 24px; cursor: pointer;">&times;</button>
+                <h3 style="font-weight: 800; font-size: 22px;">✨ إنشاء منشور جديد</h3>
+                <button onclick="closeCompose()" style="background: none; border: none; font-size: 28px; cursor: pointer; color: white;">&times;</button>
             </div>
             <div class="compose-area">
-                <textarea id="postText" class="compose-textarea" placeholder="اكتب منشوراً..."></textarea>
-                <div id="mediaPreview" style="display: none; margin: 12px; position: relative;">
+                <textarea id="postText" class="compose-textarea" placeholder="اكتب منشوراً... شارك أفكارك مع العالم! 🌍"></textarea>
+                <div id="mediaPreview" style="display: none; margin: 16px; position: relative;">
                     <div style="position: relative;">
-                        <img id="previewImg" src="" style="max-height: 250px; border-radius: 12px; width: 100%; object-fit: cover;">
-                        <video id="previewVideo" controls style="max-height: 250px; border-radius: 12px; width: 100%; display: none;"></video>
-                        <div onclick="removeSelectedMedia()" style="position: absolute; top: 8px; right: 8px; background: rgba(0,0,0,0.6); color: white; border-radius: 50%; width: 28px; height: 28px; display: flex; align-items: center; justify-content: center; cursor: pointer;"><i class="fa-solid fa-times"></i></div>
+                        <img id="previewImg" src="" style="max-height: 250px; border-radius: 20px; width: 100%; object-fit: cover;">
+                        <video id="previewVideo" controls style="max-height: 250px; border-radius: 20px; width: 100%; display: none;"></video>
+                        <div onclick="removeSelectedMedia()" style="position: absolute; top: 10px; right: 10px; background: rgba(0,0,0,0.7); color: white; border-radius: 50%; width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; cursor: pointer;"><i class="fa-solid fa-times"></i></div>
                     </div>
                 </div>
                 
                 <div id="uploadProgressContainer" class="upload-progress-container" style="display: none;">
-                    <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
-                        <span style="font-size: 12px; color: #f59e0b;"><i class="fas fa-cloud-upload-alt"></i> جاري رفع الملف...</span>
-                        <span id="uploadProgressText" style="font-size: 12px; color: #f59e0b; font-weight: 600;">0%</span>
+                    <div style="display: flex; justify-content: space-between; margin-bottom: 10px;">
+                        <span style="font-size: 13px; color: #f59e0b;"><i class="fas fa-cloud-upload-alt"></i> جاري رفع الملف...</span>
+                        <span id="uploadProgressText" style="font-size: 13px; color: #f59e0b; font-weight: 700;">0%</span>
                     </div>
                     <div class="progress-bar-bg">
                         <div id="uploadProgressFill" class="progress-fill-custom"></div>
@@ -1200,6 +1375,8 @@
                     <span onclick="addEmojiToPost('🔥')">🔥</span>
                     <span onclick="addEmojiToPost('🎉')">🎉</span>
                     <span onclick="addEmojiToPost('😢')">😢</span>
+                    <span onclick="addEmojiToPost('🤩')">🤩</span>
+                    <span onclick="addEmojiToPost('😎')">😎</span>
                 </div>
                 <div class="compose-tools">
                     <button class="compose-tool" onclick="document.getElementById('postImage').click()"><i class="fa-regular fa-image"></i></button>
@@ -1208,13 +1385,13 @@
                 </div>
                 <input type="file" id="postImage" accept="image/*" style="display:none" onchange="previewMedia(this, 'image')">
                 <input type="file" id="postVideo" accept="video/*" style="display:none" onchange="previewMedia(this, 'video')">
-                <div id="pollBuilder" style="display: none; margin: 12px;">
-                    <input type="text" id="pollQuestion" placeholder="سؤال التصويت..." class="chat-input" style="width: 100%; margin-bottom: 8px;">
-                    <input type="text" id="pollOption1" placeholder="خيار 1" class="chat-input" style="width: 100%; margin-bottom: 4px;">
-                    <input type="text" id="pollOption2" placeholder="خيار 2" class="chat-input" style="width: 100%; margin-bottom: 4px;">
-                    <button onclick="addPollOption()" style="background: none; border: 1px solid #f59e0b; color: #f59e0b; padding: 4px 8px; border-radius: 8px;">+ إضافة خيار</button>
+                <div id="pollBuilder" style="display: none; margin: 16px;">
+                    <input type="text" id="pollQuestion" placeholder="📊 سؤال التصويت..." class="chat-input" style="width: 100%; margin-bottom: 10px;">
+                    <input type="text" id="pollOption1" placeholder="خيار 1" class="chat-input" style="width: 100%; margin-bottom: 6px;">
+                    <input type="text" id="pollOption2" placeholder="خيار 2" class="chat-input" style="width: 100%; margin-bottom: 6px;">
+                    <button onclick="addPollOption()" style="background: none; border: 1px solid #f59e0b; color: #f59e0b; padding: 6px 12px; border-radius: 30px; margin-top: 8px; cursor: pointer;">+ إضافة خيار</button>
                 </div>
-                <button id="publishPostBtn" onclick="createPost()" style="width: 100%; background: linear-gradient(135deg, #f59e0b, #ea580c); color: white; padding: 14px; border-radius: 16px; margin-top: 16px; font-weight: 700; border: none; cursor: pointer; transition: all 0.2s;">✨ نشر</button>
+                <button id="publishPostBtn" onclick="createPost()" style="width: 100%; background: linear-gradient(135deg, #f59e0b, #ea580c); color: white; padding: 16px; border-radius: 60px; margin-top: 20px; font-weight: 800; font-size: 18px; border: none; cursor: pointer; transition: all 0.2s;">✨ نشر</button>
             </div>
         </div>
     </div>
@@ -1222,8 +1399,8 @@
     <!-- Comments Panel -->
     <div id="commentsPanel" class="chat-panel">
         <div class="chat-header">
-            <h3 style="font-weight: 700;">💬 التعليقات</h3>
-            <button onclick="closeComments()" style="background: none; border: none; font-size: 24px; cursor: pointer;">&times;</button>
+            <h3 style="font-weight: 800; font-size: 20px;">💬 التعليقات</h3>
+            <button onclick="closeComments()" style="background: none; border: none; font-size: 28px; cursor: pointer; color: white;">&times;</button>
         </div>
         <div id="commentsList" class="chat-messages"></div>
         <div class="chat-input-area">
@@ -1235,34 +1412,34 @@
     <!-- Profile Panel -->
     <div id="profilePanel" class="chat-panel">
         <div class="chat-header">
-            <h3 style="font-weight: 700;">👤 الملف الشخصي</h3>
-            <button onclick="closeProfile()" style="background: none; border: none; font-size: 24px; cursor: pointer;">&times;</button>
+            <h3 style="font-weight: 800; font-size: 20px;">👤 الملف الشخصي</h3>
+            <button onclick="closeProfile()" style="background: none; border: none; font-size: 28px; cursor: pointer; color: white;">&times;</button>
         </div>
         <div style="overflow-y: auto;">
             <div id="profileCover" class="profile-cover"></div>
             <div class="profile-avatar-wrapper">
-                <div class="profile-avatar-large" id="profileAvatarLarge"><i class="fa-solid fa-user text-5xl text-white flex items-center justify-center h-full"></i></div>
+                <div class="profile-avatar-large" id="profileAvatarLarge"><i class="fa-solid fa-user text-6xl text-white flex items-center justify-center h-full"></i></div>
             </div>
             <div class="profile-info">
                 <div class="profile-name" id="profileName"></div>
-                <div class="profile-bio" id="profileBio"></div>
-                <div id="profileWebsite" class="profile-bio" style="color: #f59e0b;"></div>
+                <div class="profile-bio" id="profileBio" style="margin-top: 8px; opacity: 0.8;"></div>
+                <div id="profileWebsite" class="profile-bio" style="color: #f59e0b; margin-top: 6px;"></div>
                 <div class="profile-stats">
                     <div class="stat-item" onclick="openFollowersList('followers')">
                         <div class="stat-number" id="profileFollowersCount">0</div>
-                        <div>متابع</div>
+                        <div style="font-size: 13px;">متابع</div>
                     </div>
                     <div class="stat-item" onclick="openFollowersList('following')">
                         <div class="stat-number" id="profileFollowingCount">0</div>
-                        <div>يتابع</div>
+                        <div style="font-size: 13px;">يتابع</div>
                     </div>
                     <div class="stat-item">
                         <div class="stat-number" id="profilePostsCount">0</div>
-                        <div>منشورات</div>
+                        <div style="font-size: 13px;">منشورات</div>
                     </div>
                     <div class="stat-item" onclick="openProfileViews()">
                         <div class="stat-number" id="profileViewsCount">0</div>
-                        <div>مشاهدة</div>
+                        <div style="font-size: 13px;">مشاهدة</div>
                     </div>
                 </div>
                 <div id="profileButtons" class="profile-buttons"></div>
@@ -1279,20 +1456,20 @@
     <!-- Chat Panel -->
     <div id="chatPanel" class="chat-panel">
         <div class="chat-header">
-            <div style="display: flex; align-items: center; gap: 12px;">
-                <div class="profile-avatar-large" id="chatAvatar" style="width: 44px; height: 44px;"></div>
+            <div style="display: flex; align-items: center; gap: 14px;">
+                <div class="profile-avatar-large" id="chatAvatar" style="width: 50px; height: 50px;"></div>
                 <div>
-                    <h3 id="chatUserName" style="font-weight: 700;">محادثة</h3>
-                    <div id="chatLastSeen" class="last-seen" style="font-size: 10px; color: #9ca3af;"></div>
+                    <h3 id="chatUserName" style="font-weight: 800;">محادثة</h3>
+                    <div id="chatLastSeen" style="font-size: 11px; opacity: 0.6;"></div>
                 </div>
             </div>
-            <div style="display: flex; gap: 12px;">
+            <div style="display: flex; gap: 16px;">
                 <button class="chat-send-btn" onclick="startVideoCallWithCurrentUser()" style="color: #f59e0b;"><i class="fa-solid fa-video"></i></button>
-                <button onclick="closeChat()" style="background: none; border: none; font-size: 24px; cursor: pointer;">&times;</button>
+                <button onclick="closeChat()" style="background: none; border: none; font-size: 28px; cursor: pointer; color: white;">&times;</button>
             </div>
         </div>
         <div id="chatMessages" class="chat-messages"></div>
-        <div id="typingIndicator" class="typing-indicator" style="display: none; padding: 8px 16px; font-size: 12px; color: #9ca3af;">✏️ جاري الكتابة...</div>
+        <div id="typingIndicator" style="display: none; padding: 10px 20px; font-size: 12px; opacity: 0.6;">✏️ جاري الكتابة...</div>
         <div class="chat-input-area">
             <button class="chat-send-btn" onclick="toggleVoiceRecording()"><i class="fa-solid fa-microphone"></i></button>
             <input type="file" id="chatImageInput" accept="image/*" style="display:none" onchange="sendChatImage(this)">
@@ -1305,82 +1482,99 @@
     <!-- Conversations Panel -->
     <div id="conversationsPanel" class="chat-panel">
         <div class="chat-header">
-            <h3 style="font-weight: 700;">💬 الرسائل</h3>
-            <button onclick="closeConversations()" style="background: none; border: none; font-size: 24px; cursor: pointer;">&times;</button>
+            <h3 style="font-weight: 800; font-size: 20px;">💬 الرسائل</h3>
+            <button onclick="closeConversations()" style="background: none; border: none; font-size: 28px; cursor: pointer; color: white;">&times;</button>
         </div>
-        <div id="conversationsList" style="padding: 12px;"></div>
+        <div id="conversationsList" style="padding: 16px;"></div>
     </div>
     
     <!-- Notifications Panel -->
     <div id="notificationsPanel" class="chat-panel">
         <div class="chat-header">
-            <h3 style="font-weight: 700;">🔔 الإشعارات</h3>
-            <button onclick="closeNotifications()" style="background: none; border: none; font-size: 24px; cursor: pointer;">&times;</button>
+            <h3 style="font-weight: 800; font-size: 20px;">🔔 الإشعارات</h3>
+            <button onclick="closeNotifications()" style="background: none; border: none; font-size: 28px; cursor: pointer; color: white;">&times;</button>
         </div>
-        <div id="notificationsList" style="padding: 12px;"></div>
+        <div id="notificationsList" style="padding: 16px;"></div>
     </div>
     
     <!-- Search Panel -->
     <div id="searchPanel" class="chat-panel">
         <div class="chat-header">
-            <h3 style="font-weight: 700;">🔍 بحث</h3>
-            <button onclick="closeSearch()" style="background: none; border: none; font-size: 24px; cursor: pointer;">&times;</button>
+            <h3 style="font-weight: 800; font-size: 20px;">🔍 بحث</h3>
+            <button onclick="closeSearch()" style="background: none; border: none; font-size: 28px; cursor: pointer; color: white;">&times;</button>
         </div>
-        <input type="text" id="searchInput" class="chat-input" style="margin: 12px; width: calc(100% - 24px);" placeholder="بحث عن مستخدمين أو هاشتاجات..." onkeyup="searchAll()">
-        <div id="searchResults" style="padding: 12px;"></div>
+        <input type="text" id="searchInput" class="chat-input" style="margin: 16px; width: calc(100% - 32px);" placeholder="بحث عن مستخدمين أو هاشتاجات..." onkeyup="searchAll()">
+        <div id="searchResults" style="padding: 16px;"></div>
     </div>
     
     <!-- Saved Posts Panel -->
     <div id="savedPostsPanel" class="chat-panel">
         <div class="chat-header">
-            <h3 style="font-weight: 700;">📌 المنشورات المحفوظة</h3>
-            <button onclick="closeSavedPosts()" style="background: none; border: none; font-size: 24px; cursor: pointer;">&times;</button>
+            <h3 style="font-weight: 800; font-size: 20px;">📌 المنشورات المحفوظة</h3>
+            <button onclick="closeSavedPosts()" style="background: none; border: none; font-size: 28px; cursor: pointer; color: white;">&times;</button>
         </div>
-        <div id="savedPostsGrid" style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 2px; padding: 8px;"></div>
+        <div id="savedPostsGrid" style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 3px; padding: 8px;"></div>
     </div>
     
     <!-- Profile Views Panel -->
     <div id="profileViewsPanel" class="chat-panel">
         <div class="chat-header">
-            <h3 style="font-weight: 700;">👁️ من شاهد ملفك</h3>
-            <button onclick="closeProfileViews()" style="background: none; border: none; font-size: 24px; cursor: pointer;">&times;</button>
+            <h3 style="font-weight: 800; font-size: 20px;">👁️ من شاهد ملفك</h3>
+            <button onclick="closeProfileViews()" style="background: none; border: none; font-size: 28px; cursor: pointer; color: white;">&times;</button>
         </div>
-        <div id="profileViewsList" style="padding: 12px;"></div>
+        <div id="profileViewsList" style="padding: 16px;"></div>
     </div>
     
     <!-- Followers Panel -->
     <div id="followersPanel" class="chat-panel">
         <div class="chat-header">
-            <h3 id="followersTitle" style="font-weight: 700;">المتابعون</h3>
-            <button onclick="closeFollowers()" style="background: none; border: none; font-size: 24px; cursor: pointer;">&times;</button>
+            <h3 id="followersTitle" style="font-weight: 800; font-size: 20px;">المتابعون</h3>
+            <button onclick="closeFollowers()" style="background: none; border: none; font-size: 28px; cursor: pointer; color: white;">&times;</button>
         </div>
-        <div id="followersList" style="padding: 12px;"></div>
+        <div id="followersList" style="padding: 16px;"></div>
     </div>
     
-    <!-- Admin Panel -->
+    <!-- Admin Dashboard Panel -->
     <div id="adminPanel" class="admin-panel">
         <div class="chat-header">
-            <h3 style="font-weight: 700;">🔧 لوحة التحكم</h3>
-            <button onclick="closeAdmin()" style="background: none; border: none; font-size: 24px; cursor: pointer;">&times;</button>
+            <h3 style="font-weight: 800; font-size: 22px;">🔧 لوحة التحكم - Admin Dashboard</h3>
+            <button onclick="closeAdmin()" style="background: none; border: none; font-size: 28px; cursor: pointer; color: white;">&times;</button>
         </div>
+        
+        <!-- Stats Cards -->
         <div class="admin-stats">
-            <div class="admin-stat-card"><div class="admin-stat-number" id="adminUsersCount">0</div><div>مستخدمين</div></div>
-            <div class="admin-stat-card"><div class="admin-stat-number" id="adminPostsCount">0</div><div>منشورات</div></div>
-            <div class="admin-stat-card"><div class="admin-stat-number" id="adminCommentsCount">0</div><div>تعليقات</div></div>
+            <div class="admin-stat-card">
+                <div class="admin-stat-number" id="adminUsersCount">0</div>
+                <div>👥 مستخدمين</div>
+            </div>
+            <div class="admin-stat-card">
+                <div class="admin-stat-number" id="adminPostsCount">0</div>
+                <div>📝 منشورات</div>
+            </div>
+            <div class="admin-stat-card">
+                <div class="admin-stat-number" id="adminCommentsCount">0</div>
+                <div>💬 تعليقات</div>
+            </div>
         </div>
-        <div style="padding: 16px;">
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
-                <h4 style="font-weight: 700;"><i class="fa-solid fa-ban"></i> 🚫 الكلمات الممنوعة</h4>
+        
+        <!-- Bad Words Management -->
+        <div style="padding: 20px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+                <h4 style="font-weight: 800;"><i class="fa-solid fa-ban"></i> 🚫 الكلمات الممنوعة</h4>
                 <button class="admin-verify-btn" onclick="showAddBadWordModal()">+ إضافة كلمة</button>
             </div>
-            <div id="adminBadWordsList"></div>
+            <div id="adminBadWordsList" style="max-height: 200px; overflow-y: auto;"></div>
         </div>
-        <div style="padding: 16px;">
-            <h4 style="font-weight: 700; margin-bottom: 12px;"><i class="fa-solid fa-users"></i> إدارة المستخدمين</h4>
+        
+        <!-- Users Management -->
+        <div style="padding: 20px;">
+            <h4 style="font-weight: 800; margin-bottom: 16px;"><i class="fa-solid fa-users"></i> 👑 إدارة المستخدمين</h4>
             <div id="adminUsersList"></div>
         </div>
-        <div style="padding: 16px;">
-            <h4 style="font-weight: 700; margin-bottom: 12px;"><i class="fa-solid fa-newspaper"></i> أحدث المنشورات</h4>
+        
+        <!-- Posts Management -->
+        <div style="padding: 20px;">
+            <h4 style="font-weight: 800; margin-bottom: 16px;"><i class="fa-solid fa-newspaper"></i> 📰 أحدث المنشورات</h4>
             <div id="adminPostsList"></div>
         </div>
     </div>
@@ -1388,11 +1582,11 @@
     <!-- Edit Profile Modal -->
     <div id="editProfileModal" class="modal-overlay">
         <div class="modal-content">
-            <h3 style="font-weight: 700; margin-bottom: 16px;">✏️ تعديل الملف الشخصي</h3>
-            <input type="text" id="editName" class="chat-input" style="width: 100%; margin-bottom: 12px;" placeholder="الاسم">
-            <textarea id="editBio" class="chat-input" style="width: 100%; min-height: 80px; margin-bottom: 12px;" placeholder="السيرة الذاتية..."></textarea>
-            <input type="url" id="editWebsite" class="chat-input" style="width: 100%; margin-bottom: 12px;" placeholder="رابط الموقع">
-            <div style="display: flex; gap: 10px;">
+            <h3 style="font-weight: 800; margin-bottom: 20px;">✏️ تعديل الملف الشخصي</h3>
+            <input type="text" id="editName" class="chat-input" style="width: 100%; margin-bottom: 16px; background: rgba(255,255,255,0.1);" placeholder="الاسم">
+            <textarea id="editBio" class="chat-input" style="width: 100%; min-height: 80px; margin-bottom: 16px; background: rgba(255,255,255,0.1);" placeholder="السيرة الذاتية..."></textarea>
+            <input type="url" id="editWebsite" class="chat-input" style="width: 100%; margin-bottom: 20px; background: rgba(255,255,255,0.1);" placeholder="رابط الموقع">
+            <div style="display: flex; gap: 12px;">
                 <button class="profile-btn" onclick="closeEditProfileModal()">إلغاء</button>
                 <button class="profile-btn profile-btn-primary" onclick="saveProfileEdit()">حفظ</button>
             </div>
@@ -1402,15 +1596,15 @@
     <!-- Report Modal -->
     <div id="reportModal" class="modal-overlay">
         <div class="modal-content">
-            <h3 style="font-weight: 700; margin-bottom: 16px;">🚨 الإبلاغ</h3>
+            <h3 style="font-weight: 800; margin-bottom: 20px;">🚨 الإبلاغ عن منشور</h3>
             <div id="reportReasons">
-                <div class="report-reason" onclick="selectReportReason(this, 'محتوى غير لائق')" style="padding: 10px; margin: 5px 0; background: #f3f4f6; border-radius: 8px; cursor: pointer;">محتوى غير لائق</div>
-                <div class="report-reason" onclick="selectReportReason(this, 'تحرش')" style="padding: 10px; margin: 5px 0; background: #f3f4f6; border-radius: 8px; cursor: pointer;">تحرش</div>
-                <div class="report-reason" onclick="selectReportReason(this, 'عنف')" style="padding: 10px; margin: 5px 0; background: #f3f4f6; border-radius: 8px; cursor: pointer;">عنف</div>
-                <div class="report-reason" onclick="selectReportReason(this, 'سب وقذف')" style="padding: 10px; margin: 5px 0; background: #f3f4f6; border-radius: 8px; cursor: pointer;">سب وقذف</div>
+                <div class="report-reason" onclick="selectReportReason(this, 'محتوى غير لائق')" style="padding: 12px; margin: 8px 0; background: rgba(255,255,255,0.05); border-radius: 16px; cursor: pointer; transition: all 0.2s;">📢 محتوى غير لائق</div>
+                <div class="report-reason" onclick="selectReportReason(this, 'تحرش')" style="padding: 12px; margin: 8px 0; background: rgba(255,255,255,0.05); border-radius: 16px; cursor: pointer; transition: all 0.2s;">⚠️ تحرش</div>
+                <div class="report-reason" onclick="selectReportReason(this, 'عنف')" style="padding: 12px; margin: 8px 0; background: rgba(255,255,255,0.05); border-radius: 16px; cursor: pointer; transition: all 0.2s;">🔪 عنف</div>
+                <div class="report-reason" onclick="selectReportReason(this, 'سب وقذف')" style="padding: 12px; margin: 8px 0; background: rgba(255,255,255,0.05); border-radius: 16px; cursor: pointer; transition: all 0.2s;">💬 سب وقذف</div>
             </div>
-            <button class="profile-btn profile-btn-primary" onclick="submitReport()" style="margin-top: 16px;">إرسال</button>
-            <button class="profile-btn" onclick="closeReportModal()">إلغاء</button>
+            <button class="profile-btn profile-btn-primary" onclick="submitReport()" style="margin-top: 20px;">إرسال البلاغ</button>
+            <button class="profile-btn" onclick="closeReportModal()" style="margin-top: 10px;">إلغاء</button>
         </div>
     </div>
     
@@ -1424,11 +1618,11 @@
     
     <!-- Video Call Modal -->
     <div id="videoCallModal" class="video-call-modal">
-        <div class="video-container" style="flex: 1; display: flex; flex-direction: column; position: relative;">
+        <div style="flex: 1; display: flex; flex-direction: column; position: relative;">
             <div id="remoteVideo" style="flex: 1; background: #000;"></div>
-            <div id="localVideo" style="width: 120px; height: 180px; position: absolute; bottom: 20px; right: 20px; background: #333; border-radius: 16px; border: 2px solid white;"></div>
+            <div id="localVideo" style="width: 140px; height: 200px; position: absolute; bottom: 20px; right: 20px; background: #333; border-radius: 20px; border: 2px solid #f59e0b;"></div>
         </div>
-        <div class="call-controls" style="padding: 20px; display: flex; justify-content: center;">
+        <div style="padding: 20px; display: flex; justify-content: center;">
             <button class="call-end-btn" onclick="endVideoCall()"><i class="fa-solid fa-phone-slash"></i></button>
         </div>
     </div>
@@ -1437,7 +1631,7 @@
     <div id="customToast"></div>
     
     <!-- Recording Indicator -->
-    <div id="recordingIndicator" style="display: none; position: fixed; bottom: 100px; left: 50%; transform: translateX(-50%); background: #ef4444; color: white; padding: 8px 16px; border-radius: 40px; z-index: 1100;">🔴 جاري التسجيل...</div>
+    <div id="recordingIndicator" style="display: none; position: fixed; bottom: 100px; left: 50%; transform: translateX(-50%); background: #ef4444; color: white; padding: 10px 20px; border-radius: 60px; z-index: 1100; font-size: 14px;">🔴 جاري التسجيل...</div>
 </div>
 
 <script src="firebase-config.js"></script>
