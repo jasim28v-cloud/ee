@@ -1,11 +1,12 @@
-// ==================== ZORAK - Modern Social Platform Configuration ====================
+// ==================== LUME - Firebase Configuration ====================
 const firebaseConfig = {
     apiKey: "AIzaSyD436FkIwy_e9tK5aW1DVPfUpeGZHeedUk",
     authDomain: "zorak-e0a51.firebaseapp.com",
     databaseURL: "https://zorak-e0a51-default-rtdb.firebaseio.com/",
     projectId: "zorak-e0a51",
     storageBucket: "zorak-e0a51.firebasestorage.app",
-    appId: "1:34407692791:web:bdd5d72c9c840afb6416f2"
+    appId: "1:34407692791:web:bdd5d72c9c840afb6416f2",
+    measurementId: "G-NQVTB8RBKW"
 };
 
 // Initialize Firebase
@@ -24,10 +25,10 @@ const UPLOAD_PRESET = 'do_2gg';
 const AGORA_APP_ID = '4017f66ea15f4ce088e8d8993a072a5b';
 
 // Admin Account
-const ADMIN_EMAIL = 'jasim66v@gmail.com';
-const ADMIN_PASSWORD = 'dd2314dd';
+const ADMIN_EMAIL = 'jasim11v@gmail.com';
+const ADMIN_PASSWORD = 'nn2314nn';
 
 // Site Name
-const SITE_NAME = 'ZORAK';
+const SITE_NAME = 'LUME';
 
-console.log('✅ ZORAK - Modern Social Platform Ready');
+console.log('✅ LUME - Firebase, Cloudinary & Agora Ready');
