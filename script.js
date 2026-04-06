@@ -1,4 +1,4 @@
-// ==================== ZORAK - Modern Social Platform ====================
+// ==================== LUME - المتغيرات العامة ====================
 let currentUser = null;
 let currentPostId = null;
 let currentChatUser = null;
@@ -19,10 +19,10 @@ let currentImageIndex = 0;
 // ==================== Infinite Scroll Variables ====================
 let allPostsCache = [];
 let currentDisplayCount = 0;
-let isLoadingMore = false;
+let isLoadingPosts = false;
 let hasMorePosts = true;
-let scrollListenerActive = true;
-const POSTS_PER_BATCH = 8;
+const POSTS_PER_PAGE = 8;
+let scrollListenerAdded = false;
 
 // ==================== Agora Variables ====================
 let agoraClient = null;
@@ -43,32 +43,17 @@ function showToast(message, duration = 2000) {
     }, duration);
 }
 
-function openMediaViewer(url, type) {
-    const viewer = document.getElementById('mediaViewer');
-    const viewerImage = document.getElementById('viewerImage');
-    const viewerVideo = document.getElementById('viewerVideo');
-    
-    if (type === 'image') {
-        viewerImage.style.display = 'block';
-        viewerVideo.style.display = 'none';
-        viewerImage.src = url;
-        viewerVideo.pause();
-    } else if (type === 'video') {
-        viewerImage.style.display = 'none';
-        viewerVideo.style.display = 'block';
-        viewerVideo.src = url;
-        viewerVideo.load();
-        viewerVideo.play();
-    }
-    
+function openImageViewer(images, index) {
+    currentImageUrls = images;
+    currentImageIndex = index;
+    const viewer = document.getElementById('imageViewerModal');
+    const viewerImg = document.getElementById('viewerImage');
+    if (viewerImg && images[index]) viewerImg.src = images[index];
     viewer.classList.add('open');
 }
 
-function closeMediaViewer() {
-    const viewer = document.getElementById('mediaViewer');
-    const viewerVideo = document.getElementById('viewerVideo');
-    viewerVideo.pause();
-    viewer.classList.remove('open');
+function closeImageViewer() {
+    document.getElementById('imageViewerModal').classList.remove('open');
 }
 
 function formatTime(timestamp) {
@@ -115,107 +100,39 @@ function filterBadWords(text) {
     return filtered;
 }
 
-// ==================== Upload to Cloudinary ====================
-async function uploadToCloudinary(file) {
-    const url = `https://api.cloudinary.com/v1_1/${CLOUD_NAME}/upload`;
-    const formData = new FormData();
-    formData.append('file', file);
-    formData.append('upload_preset', UPLOAD_PRESET);
-    
-    const progressDiv = document.getElementById('uploadProgress');
-    const progressFill = document.getElementById('progressFill');
-    if (progressDiv && progressFill) {
-        progressDiv.classList.add('active');
-        progressFill.style.width = '0%';
-    }
-    
-    try {
-        let progress = 0;
-        const interval = setInterval(() => {
-            if (progress < 90) {
-                progress += 10;
-                if (progressFill) progressFill.style.width = progress + '%';
+// ==================== Upload to Cloudinary with Progress Bar ====================
+function uploadToCloudinaryWithProgress(file, onProgress) {
+    return new Promise((resolve, reject) => {
+        const url = `https://api.cloudinary.com/v1_1/${CLOUD_NAME}/upload`;
+        const formData = new FormData();
+        formData.append('file', file);
+        formData.append('upload_preset', UPLOAD_PRESET);
+        
+        const xhr = new XMLHttpRequest();
+        xhr.open('POST', url);
+        
+        xhr.upload.onprogress = (event) => {
+            if (event.lengthComputable && onProgress) {
+                const percent = Math.round((event.loaded / event.total) * 100);
+                onProgress(percent);
             }
-        }, 200);
-        
-        const response = await fetch(url, { method: 'POST', body: formData });
-        clearInterval(interval);
-        
-        const data = await response.json();
-        if (data.secure_url) {
-            if (progressFill) progressFill.style.width = '100%';
-            setTimeout(() => {
-                if (progressDiv) progressDiv.classList.remove('active');
-            }, 500);
-            return data.secure_url;
-        }
-        throw new Error('Upload failed');
-    } catch (error) {
-        console.error('Cloudinary error:', error);
-        showToast('فشل رفع الملف');
-        if (progressDiv) progressDiv.classList.remove('active');
-        return null;
-    }
-}
-
-// ==================== Voice Recording ====================
-async function startVoiceRecording() {
-    try {
-        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-        mediaRecorder = new MediaRecorder(stream);
-        audioChunks = [];
-        
-        mediaRecorder.ondataavailable = (event) => {
-            audioChunks.push(event.data);
         };
         
-        mediaRecorder.onstop = async () => {
-            const audioBlob = new Blob(audioChunks, { type: 'audio/webm' });
-            const audioUrl = await uploadToCloudinary(audioBlob);
-            
-            if (audioUrl && currentChatUser) {
-                const chatId = getChatId(currentUser.uid, currentChatUser.uid);
-                await db.ref(`chats/${chatId}`).push({
-                    senderId: currentUser.uid,
-                    audioUrl: audioUrl,
-                    timestamp: Date.now(),
-                    read: false
-                });
-                showToast('🎤 تم إرسال الرسالة الصوتية');
-                loadChatMessages(currentChatUser.uid);
+        xhr.onload = () => {
+            if (xhr.status === 200) {
+                const data = JSON.parse(xhr.responseText);
+                resolve(data.secure_url);
+            } else {
+                reject(new Error('Upload failed'));
             }
-            
-            stream.getTracks().forEach(track => track.stop());
-            document.getElementById('recordingIndicator').style.display = 'none';
         };
         
-        mediaRecorder.start();
-        isRecording = true;
-        document.getElementById('recordingIndicator').style.display = 'flex';
-        showToast('🔴 جاري التسجيل... اضغط مرة أخرى للإيقاف');
-    } catch (error) {
-        console.error('Recording error:', error);
-        showToast('❌ لا يمكن الوصول إلى الميكروفون');
-    }
+        xhr.onerror = () => reject(new Error('Network error'));
+        xhr.send(formData);
+    });
 }
 
-function stopVoiceRecording() {
-    if (mediaRecorder && isRecording) {
-        mediaRecorder.stop();
-        isRecording = false;
-        document.getElementById('recordingIndicator').style.display = 'none';
-    }
-}
-
-function toggleVoiceRecording() {
-    if (isRecording) {
-        stopVoiceRecording();
-    } else {
-        startVoiceRecording();
-    }
-}
-
-// ==================== Bad Words Management ====================
+// ==================== Bad Words Management (Admin Only) ====================
 async function loadBadWordsList() {
     const snapshot = await db.ref('badWords').once('value');
     const words = snapshot.val();
@@ -224,6 +141,7 @@ async function loadBadWordsList() {
     } else {
         badWordsList = [];
     }
+    console.log('📝 LUME - Bad words loaded:', badWordsList.length);
 }
 
 async function addBadWord(word) {
@@ -247,6 +165,49 @@ function showAddBadWordModal() {
     if (word && word.trim()) {
         addBadWord(word.trim());
     }
+}
+
+// ==================== Voice Recording ====================
+async function startVoiceRecording() {
+    try {
+        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        mediaRecorder = new MediaRecorder(stream);
+        audioChunks = [];
+        mediaRecorder.ondataavailable = (event) => audioChunks.push(event.data);
+        mediaRecorder.onstop = async () => {
+            const audioBlob = new Blob(audioChunks, { type: 'audio/webm' });
+            const audioUrl = await uploadToCloudinaryWithProgress(audioBlob, null);
+            if (audioUrl && currentChatUser) {
+                const chatId = getChatId(currentUser.uid, currentChatUser.uid);
+                await db.ref(`chats/${chatId}`).push({
+                    senderId: currentUser.uid,
+                    audioUrl: audioUrl,
+                    timestamp: Date.now(),
+                    read: false
+                });
+                showToast('🎤 تم إرسال الرسالة الصوتية');
+            }
+            stream.getTracks().forEach(track => track.stop());
+        };
+        mediaRecorder.start();
+        isRecording = true;
+        document.getElementById('recordingIndicator').style.display = 'flex';
+    } catch (error) {
+        console.error('Recording error:', error);
+        showToast('❌ لا يمكن الوصول إلى الميكروفون');
+    }
+}
+
+function stopVoiceRecording() {
+    if (mediaRecorder && isRecording) {
+        mediaRecorder.stop();
+        isRecording = false;
+        document.getElementById('recordingIndicator').style.display = 'none';
+    }
+}
+
+function toggleVoiceRecording() {
+    isRecording ? stopVoiceRecording() : startVoiceRecording();
 }
 
 // ==================== Chat Helpers ====================
@@ -312,11 +273,21 @@ function addPollOption() {
 function createHeartAnimation(x, y) {
     const heart = document.createElement('div');
     heart.className = 'heart-animation';
-    heart.innerHTML = '❤️';
+    heart.innerHTML = '🧡';
     heart.style.left = x + 'px';
     heart.style.top = y + 'px';
     document.body.appendChild(heart);
     setTimeout(() => heart.remove(), 600);
+}
+
+// ==================== Video Functions ====================
+function toggleVideoPlay(container) {
+    const video = container.querySelector('video');
+    if (video.paused) {
+        video.play();
+    } else {
+        video.pause();
+    }
 }
 
 // ==================== Settings ====================
@@ -470,68 +441,13 @@ async function startVideoCallWithUser(userId) {
 async function logout() {
     try {
         await auth.signOut();
+        localStorage.removeItem('auth_logged_in');
         showToast('👋 تم تسجيل الخروج بنجاح');
-        setTimeout(() => location.reload(), 1000);
+        setTimeout(() => {
+            window.location.href = 'auth.html';
+        }, 1000);
     } catch (error) {
         showToast('❌ حدث خطأ أثناء تسجيل الخروج');
-    }
-}
-
-// ==================== Login & Register ====================
-async function login() {
-    const email = document.getElementById('loginEmail')?.value;
-    const password = document.getElementById('loginPassword')?.value;
-    const msgDiv = document.getElementById('loginMsg');
-    if (!email || !password) return msgDiv.textContent = 'الرجاء إدخال البريد وكلمة المرور';
-    try {
-        showToast('🔄 جاري تسجيل الدخول...');
-        const userCredential = await auth.signInWithEmailAndPassword(email, password);
-        currentUser = userCredential.user;
-        const snapshot = await db.ref(`users/${currentUser.uid}`).once('value');
-        if (snapshot.exists()) {
-            currentUser = { ...currentUser, ...snapshot.val() };
-        } else {
-            await db.ref(`users/${currentUser.uid}`).set({
-                uid: currentUser.uid, name: currentUser.displayName || email.split('@')[0],
-                email: email, bio: "مرحباً! أنا في ZORAK ✨", avatar: "", cover: "",
-                website: "", verified: false, isAdmin: false, blockedUsers: {}, mutedUntil: 0, createdAt: Date.now()
-            });
-        }
-        if (email === ADMIN_EMAIL && password === ADMIN_PASSWORD) {
-            showToast('🌟 مرحباً بك في لوحة التحكم يا مدير ZORAK!');
-            await db.ref(`users/${currentUser.uid}`).update({ isAdmin: true, verified: 'blue' });
-            currentUser.isAdmin = true;
-            currentUser.verified = 'blue';
-        }
-        document.getElementById('authScreen').style.display = 'none';
-        document.getElementById('mainApp').style.display = 'block';
-        showToast(`✨ مرحباً ${currentUser.displayName || currentUser.name}!`);
-        
-        resetInfiniteScroll();
-        await loadFeed();
-        loadNotifications();
-        loadTrendingHashtags();
-        loadDndStatus();
-        checkScheduledPosts();
-        await loadBadWordsList();
-        
-        const savedTheme = localStorage.getItem('theme');
-        if (savedTheme === 'dark') document.body.classList.add('dark-mode');
-        const savedReadMode = localStorage.getItem('readMode');
-        if (savedReadMode === 'true') {
-            readModeActive = true;
-            document.getElementById('readModeToggle')?.classList.add('active');
-            document.body.classList.add('read-mode');
-        }
-        const savedHideLikes = localStorage.getItem('hideLikes');
-        if (savedHideLikes === 'true') {
-            hideLikesActive = true;
-            document.getElementById('hideLikesToggle')?.classList.add('active');
-        }
-        await recordProfileView(currentUser.uid);
-    } catch (error) {
-        if (msgDiv) msgDiv.textContent = error.message;
-        showToast(error.message);
     }
 }
 
@@ -673,7 +589,10 @@ async function changeAvatar() {
     input.onchange = async (e) => {
         const file = e.target.files[0];
         if (file) {
-            const url = await uploadToCloudinary(file);
+            showToast('🔄 جاري رفع الصورة...');
+            const url = await uploadToCloudinaryWithProgress(file, (percent) => {
+                console.log(`Upload progress: ${percent}%`);
+            });
             if (url) {
                 await db.ref(`users/${currentUser.uid}`).update({ avatar: url });
                 currentUser.avatar = url;
@@ -693,7 +612,10 @@ async function changeCover() {
     input.onchange = async (e) => {
         const file = e.target.files[0];
         if (file) {
-            const url = await uploadToCloudinary(file);
+            showToast('🔄 جاري رفع الصورة...');
+            const url = await uploadToCloudinaryWithProgress(file, (percent) => {
+                console.log(`Upload progress: ${percent}%`);
+            });
             if (url) {
                 await db.ref(`users/${currentUser.uid}`).update({ cover: url });
                 currentUser.cover = url;
@@ -723,13 +645,47 @@ async function isBlocked(userId) {
     return snapshot.exists();
 }
 
-// ==================== Create Post ====================
+// ==================== Preview Media ====================
+function previewMedia(input, type) {
+    const file = input.files[0];
+    if (file) {
+        selectedMediaFile = file;
+        const previewDiv = document.getElementById('mediaPreview');
+        const previewImg = document.getElementById('previewImg');
+        const previewVideo = document.getElementById('previewVideo');
+        
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            if (type === 'image') {
+                previewImg.src = e.target.result;
+                previewImg.style.display = 'block';
+                previewVideo.style.display = 'none';
+            } else if (type === 'video') {
+                previewVideo.src = e.target.result;
+                previewVideo.style.display = 'block';
+                previewImg.style.display = 'none';
+            }
+            previewDiv.style.display = 'block';
+        };
+        reader.readAsDataURL(file);
+    }
+}
+
+function removeSelectedMedia() {
+    selectedMediaFile = null;
+    document.getElementById('mediaPreview').style.display = 'none';
+    document.getElementById('previewImg').src = '';
+    document.getElementById('previewVideo').src = '';
+    document.getElementById('postImage').value = '';
+    document.getElementById('postVideo').value = '';
+}
+
+// ==================== Create Post with Progress Bar ====================
 async function createPost() {
     const publishBtn = document.getElementById('publishPostBtn');
-    if (publishBtn) {
-        publishBtn.style.transform = 'scale(0.95)';
-        setTimeout(() => { if(publishBtn) publishBtn.style.transform = 'scale(1)'; }, 150);
-    }
+    const progressContainer = document.getElementById('uploadProgressContainer');
+    const progressFill = document.getElementById('uploadProgressFill');
+    const progressText = document.getElementById('uploadProgressText');
     
     let text = document.getElementById('postText')?.value;
     if (containsBadWords(text)) return showToast('⚠️ المنشور يحتوي على كلمات ممنوعة');
@@ -737,11 +693,33 @@ async function createPost() {
     text = filterBadWords(text);
     if (await isUserMuted(currentUser.uid)) return showToast('⚠️ أنت مقيد مؤقتاً ولا يمكنك النشر');
 
+    if (selectedMediaFile) {
+        progressContainer.style.display = 'block';
+        progressFill.style.width = '0%';
+        progressText.textContent = '0%';
+    }
+    publishBtn.disabled = true;
+    publishBtn.innerHTML = '<i class="fas fa-spinner fa-pulse"></i> جاري الرفع...';
+    publishBtn.style.opacity = '0.7';
+
     let mediaUrl = "", mediaType = "";
     if (selectedMediaFile) {
         mediaType = selectedMediaFile.type.split('/')[0];
-        mediaUrl = await uploadToCloudinary(selectedMediaFile);
-        if (!mediaUrl) return;
+        
+        try {
+            mediaUrl = await uploadToCloudinaryWithProgress(selectedMediaFile, (percent) => {
+                progressFill.style.width = `${percent}%`;
+                progressText.textContent = `${percent}%`;
+            });
+            if (!mediaUrl) throw new Error('Upload failed');
+        } catch (error) {
+            showToast('❌ فشل رفع الملف: ' + error.message);
+            progressContainer.style.display = 'none';
+            publishBtn.disabled = false;
+            publishBtn.innerHTML = '✨ نشر';
+            publishBtn.style.opacity = '1';
+            return;
+        }
     }
 
     const hashtags = extractHashtags(text);
@@ -781,9 +759,15 @@ async function createPost() {
         await db.ref(`hashtags/${tag.toLowerCase()}/${postRef.key}`).set(true);
     }
 
+    progressContainer.style.display = 'none';
+    progressFill.style.width = '0%';
+    progressText.textContent = '0%';
+    publishBtn.disabled = false;
+    publishBtn.innerHTML = '✨ نشر';
+    publishBtn.style.opacity = '1';
+    
     document.getElementById('postText').value = "";
-    document.getElementById('mediaPreview').innerHTML = "";
-    document.getElementById('mediaPreview').style.display = "none";
+    removeSelectedMedia();
     document.getElementById('pollBuilder').style.display = "none";
     document.getElementById('pollQuestion').value = "";
     document.getElementById('pollOption1').value = "";
@@ -922,7 +906,7 @@ async function loadTrendingHashtags() {
     if (container) {
         container.innerHTML = top5.map((item, index) => `
             <div class="trending-item" onclick="searchHashtag('${item.tag}')">
-                <div class="trending-rank" style="font-size: 12px; color: #7c3aed;">#${index + 1}</div>
+                <div class="trending-rank" style="font-size: 12px; color: #f59e0b;">#${index + 1}</div>
                 <div class="trending-hashtag" style="font-weight: 600;">#${escapeHtml(item.tag)}</div>
                 <div class="trending-count" style="font-size: 11px; color: #9ca3af;">${item.count} منشور</div>
             </div>
@@ -935,7 +919,7 @@ async function loadAllPostsToCache() {
     const feedContainer = document.getElementById('feedContainer');
     if (!feedContainer) return;
     
-    feedContainer.innerHTML = '<div class="loading"><div class="spinner"></div><span>جاري تحميل ZORAK...</span></div>';
+    feedContainer.innerHTML = '<div class="loading"><div class="spinner"></div><span>جاري تحميل LUME...</span></div>';
     
     const snapshot = await db.ref('posts').once('value');
     const posts = snapshot.val();
@@ -968,15 +952,15 @@ async function loadAllPostsToCache() {
     }
     
     allPostsCache = postsArray;
-    hasMorePosts = allPostsCache.length > POSTS_PER_BATCH;
-    currentDisplayCount = POSTS_PER_BATCH;
+    hasMorePosts = allPostsCache.length > POSTS_PER_PAGE;
+    currentDisplayCount = POSTS_PER_PAGE;
     
     feedContainer.innerHTML = '';
-    await displayPosts(0, POSTS_PER_BATCH);
+    await displayPosts(0, POSTS_PER_PAGE);
     
-    if (scrollListenerActive) {
-        setupSmoothScrollListener();
-        scrollListenerActive = true;
+    if (!scrollListenerAdded) {
+        setupScrollListener();
+        scrollListenerAdded = true;
     }
 }
 
@@ -992,7 +976,7 @@ async function displayPosts(startIndex, count) {
         
         const userInfoSnapshot = await db.ref(`users/${post.userId}`).once('value');
         const userInfo = userInfoSnapshot.val();
-        const isUserVerified = userInfo?.verified;
+        const isUserVerified = userInfo?.verified || false;
         const isLiked = post.likes && post.likes[currentUser?.uid];
         const likesCount = post.likes ? Object.keys(post.likes).length : 0;
         const isOwner = post.userId === currentUser?.uid;
@@ -1047,7 +1031,7 @@ async function displayPosts(startIndex, count) {
         let mediaHtml = '';
         if (post.mediaUrl) {
             if (post.mediaType === 'image') {
-                mediaHtml = `<img src="${post.mediaUrl}" class="post-image" loading="lazy" onclick="event.stopPropagation(); openMediaViewer('${post.mediaUrl}', 'image')">`;
+                mediaHtml = `<img src="${post.mediaUrl}" class="post-image" loading="lazy" onclick="event.stopPropagation(); openImageViewer(['${post.mediaUrl}'], 0)">`;
             } else if (post.mediaType === 'video') {
                 mediaHtml = `
                     <div class="video-container" onclick="event.stopPropagation(); toggleVideoPlay(this)">
@@ -1071,8 +1055,7 @@ async function displayPosts(startIndex, count) {
                         <div>
                             <div class="post-username">
                                 ${escapeHtml(post.userName)}
-                                ${isUserVerified === 'blue' ? '<i class="fa-solid fa-circle-check verified-badge-blue" style="font-size: 14px;"></i>' : ''}
-                                ${isUserVerified === 'gold' ? '<i class="fa-solid fa-circle-check verified-badge-gold" style="font-size: 14px;"></i>' : ''}
+                                ${isUserVerified ? '<i class="fa-solid fa-circle-check verified-badge" style="color: #f59e0b; font-size: 14px;"></i>' : ''}
                             </div>
                             <div class="post-time">${formatTime(post.timestamp)} ${post.edited ? '· معدل' : ''}</div>
                         </div>
@@ -1080,7 +1063,7 @@ async function displayPosts(startIndex, count) {
                     <div style="display: flex; gap: 12px;">
                         ${(isOwner || currentUser?.isAdmin) ? `<button class="post-menu" onclick="event.stopPropagation(); deletePost('${post.id}')"><i class="fa-regular fa-trash-can"></i></button>` : ''}
                         ${isOwner ? `<button class="post-menu" onclick="event.stopPropagation(); pinPost('${post.id}')"><i class="fa-solid fa-thumbtack"></i></button>` : ''}
-                        <button class="post-menu" onclick="event.stopPropagation(); savePost('${post.id}')"><i class="fa-regular fa-bookmark" style="${isSaved ? 'color: #7c3aed;' : ''}"></i></button>
+                        <button class="post-menu" onclick="event.stopPropagation(); savePost('${post.id}')"><i class="fa-regular fa-bookmark" style="${isSaved ? 'color: #f59e0b;' : ''}"></i></button>
                         <button class="post-menu" onclick="event.stopPropagation(); quotePost('${post.id}', '${escapeHtml(post.text)}', '${escapeHtml(post.userName)}')"><i class="fa-solid fa-quote-right"></i></button>
                         <button class="post-menu" onclick="event.stopPropagation(); openReportModal('${post.id}')"><i class="fa-regular fa-flag"></i></button>
                     </div>
@@ -1093,7 +1076,7 @@ async function displayPosts(startIndex, count) {
                     <button class="post-action" onclick="openComments('${post.id}')"><i class="fa-regular fa-comment"></i></button>
                     <button class="post-action" onclick="sharePost('${post.id}')"><i class="fa-regular fa-paper-plane"></i></button>
                 </div>
-                ${likesCount > 0 && !hideLikesActive ? `<div class="post-likes">❤️ ${likesCount} إعجاب</div>` : ''}
+                ${likesCount > 0 && !hideLikesActive ? `<div class="post-likes">🧡 ${likesCount} إعجاب</div>` : ''}
                 <div class="post-caption"><span onclick="openProfile('${post.userId}')">${escapeHtml(post.userName)}</span> ${formattedText}</div>
                 ${post.commentsCount > 0 ? `<div class="post-comments" onclick="openComments('${post.id}')">💬 عرض جميع التعليقات (${post.commentsCount})</div>` : ''}
                 <div class="post-views"><i class="fa-regular fa-eye"></i> ${post.views || 0} مشاهدة</div>
@@ -1118,25 +1101,25 @@ async function displayPosts(startIndex, count) {
         if (loadMoreDiv) loadMoreDiv.remove();
         const endMessage = document.createElement('div');
         endMessage.className = 'text-center p-4 text-gray-500';
-        endMessage.innerHTML = '✨ لقد وصلت إلى نهاية ZORAK ✨';
+        endMessage.innerHTML = '✨ لقد وصلت إلى نهاية LUME ✨';
         feedContainer.appendChild(endMessage);
     }
 }
 
 async function loadMorePosts() {
-    if (isLoadingMore || !hasMorePosts) return;
+    if (isLoadingPosts || !hasMorePosts) return;
     
-    isLoadingMore = true;
+    isLoadingPosts = true;
     const loadMoreDiv = document.getElementById('loadMoreTrigger');
     if (loadMoreDiv) loadMoreDiv.style.display = 'flex';
     
     await new Promise(resolve => setTimeout(resolve, 200));
     
     const startIndex = currentDisplayCount;
-    const newEndIndex = Math.min(startIndex + POSTS_PER_BATCH, allPostsCache.length);
+    const newEndIndex = Math.min(startIndex + POSTS_PER_PAGE, allPostsCache.length);
     
     if (startIndex < allPostsCache.length) {
-        await displayPosts(startIndex, POSTS_PER_BATCH);
+        await displayPosts(startIndex, POSTS_PER_PAGE);
         currentDisplayCount = newEndIndex;
         hasMorePosts = currentDisplayCount < allPostsCache.length;
     } else {
@@ -1144,12 +1127,12 @@ async function loadMorePosts() {
     }
     
     if (loadMoreDiv) loadMoreDiv.style.display = 'none';
-    isLoadingMore = false;
+    isLoadingPosts = false;
 }
 
-function setupSmoothScrollListener() {
+function setupScrollListener() {
     const handleScroll = () => {
-        if (isLoadingMore || !hasMorePosts) return;
+        if (isLoadingPosts || !hasMorePosts) return;
         
         const scrollPosition = window.innerHeight + window.scrollY;
         const threshold = document.body.offsetHeight - 400;
@@ -1199,8 +1182,8 @@ async function refreshFeedCache() {
     }
     
     allPostsCache = postsArray;
-    hasMorePosts = allPostsCache.length > POSTS_PER_BATCH;
-    currentDisplayCount = Math.min(POSTS_PER_BATCH, allPostsCache.length);
+    hasMorePosts = allPostsCache.length > POSTS_PER_PAGE;
+    currentDisplayCount = Math.min(POSTS_PER_PAGE, allPostsCache.length);
     
     const feedContainer = document.getElementById('feedContainer');
     if (feedContainer) {
@@ -1210,7 +1193,7 @@ async function refreshFeedCache() {
 }
 
 function resetInfiniteScroll() {
-    isLoadingMore = false;
+    isLoadingPosts = false;
     hasMorePosts = true;
     allPostsCache = [];
     currentDisplayCount = 0;
@@ -1256,7 +1239,7 @@ async function searchAll() {
     let html = '';
     for (const result of results) {
         if (result.type === 'user') html += `<div class="follower-item" onclick="closeSearch(); openProfile('${result.data.uid}')"><div class="post-avatar" style="width: 44px; height: 44px;">${result.data.avatar ? `<img src="${result.data.avatar}">` : '<i class="fa-solid fa-user text-white text-xl flex items-center justify-center h-full"></i>'}</div><div><div style="font-weight: 600;">${escapeHtml(result.data.name)}</div><div style="font-size: 12px; color: #9ca3af;">${escapeHtml(result.data.email)}</div></div></div>`;
-        else if (result.type === 'hashtag') html += `<div class="follower-item" onclick="closeSearch(); searchHashtag('${result.data.tag}')"><div class="post-avatar" style="width: 44px; height: 44px; background: linear-gradient(135deg, #667eea, #764ba2); display: flex; align-items: center; justify-content: center;"><i class="fa-solid fa-hashtag text-white text-xl"></i></div><div><div style="font-weight: 600; color: #7c3aed;">#${escapeHtml(result.data.tag)}</div><div style="font-size: 12px; color: #9ca3af;">${result.data.count} منشور</div></div></div>`;
+        else if (result.type === 'hashtag') html += `<div class="follower-item" onclick="closeSearch(); searchHashtag('${result.data.tag}')"><div class="post-avatar" style="width: 44px; height: 44px; background: linear-gradient(135deg, #f59e0b, #ea580c); display: flex; align-items: center; justify-content: center;"><i class="fa-solid fa-hashtag text-white text-xl"></i></div><div><div style="font-weight: 600; color: #f59e0b;">#${escapeHtml(result.data.tag)}</div><div style="font-size: 12px; color: #9ca3af;">${result.data.count} منشور</div></div></div>`;
     }
     document.getElementById('searchResults').innerHTML = html || '<div class="text-center p-4 text-gray-500">🔍 لا توجد نتائج</div>';
 }
@@ -1293,8 +1276,8 @@ async function loadComments(postId) {
         const userSnapshot = await db.ref(`users/${comment.userId}`).once('value');
         const userData = userSnapshot.val();
         const isCommentOwner = comment.userId === currentUser?.uid;
-        const isVerified = userData?.verified;
-        html += `<div class="chat-message"><div class="message-bubble"><div style="display: flex; align-items: center; gap: 8px; margin-bottom: 4px;"><span style="font-weight: 600; cursor: pointer; display: flex; align-items: center; gap: 4px;" onclick="closeComments(); openProfile('${comment.userId}')">${escapeHtml(userData?.name || 'مستخدم')}${isVerified === 'blue' ? '<i class="fa-solid fa-circle-check verified-badge-blue" style="color: #1D9BF0; font-size: 12px;"></i>' : ''}${isVerified === 'gold' ? '<i class="fa-solid fa-circle-check verified-badge-gold" style="color: #FFD700; font-size: 12px;"></i>' : ''}</span><span style="font-size: 10px; color: #9ca3af;">${formatTime(comment.timestamp)}</span>${comment.id === pinnedId ? '<span style="background: linear-gradient(135deg, #667eea, #764ba2); color: white; padding: 2px 6px; border-radius: 12px; font-size: 9px;">📌 مثبت</span>' : ''}${isCommentOwner ? `<button class="post-menu" onclick="pinComment('${postId}', '${comment.id}')" style="margin-right: auto;"><i class="fa-solid fa-thumbtack"></i></button>` : ''}</div><div>${escapeHtml(filterBadWords(comment.text))}</div></div></div>`;
+        const isVerified = userData?.verified || false;
+        html += `<div class="chat-message"><div class="message-bubble"><div style="display: flex; align-items: center; gap: 8px; margin-bottom: 4px;"><span style="font-weight: 600; cursor: pointer; display: flex; align-items: center; gap: 4px;" onclick="closeComments(); openProfile('${comment.userId}')">${escapeHtml(userData?.name || 'مستخدم')}${isVerified ? '<i class="fa-solid fa-circle-check" style="color: #f59e0b; font-size: 12px;"></i>' : ''}</span><span style="font-size: 10px; color: #9ca3af;">${formatTime(comment.timestamp)}</span>${comment.id === pinnedId ? '<span style="background: linear-gradient(135deg, #f59e0b, #ea580c); color: white; padding: 2px 6px; border-radius: 12px; font-size: 9px;">📌 مثبت</span>' : ''}${isCommentOwner ? `<button class="post-menu" onclick="pinComment('${postId}', '${comment.id}')" style="margin-right: auto;"><i class="fa-solid fa-thumbtack"></i></button>` : ''}</div><div>${escapeHtml(filterBadWords(comment.text))}</div></div></div>`;
     }
     commentsList.innerHTML = html;
 }
@@ -1344,15 +1327,15 @@ async function openProfile(userId) {
             profileCover.style.backgroundSize = 'cover';
             profileCover.style.backgroundPosition = 'center';
         } else {
-            profileCover.style.backgroundImage = 'linear-gradient(135deg, #667eea, #764ba2)';
+            profileCover.style.backgroundImage = 'linear-gradient(135deg, #f59e0b, #ea580c)';
         }
     }
     const profileAvatarLarge = document.getElementById('profileAvatarLarge');
     profileAvatarLarge.innerHTML = userData.avatar ? `<img src="${userData.avatar}" style="width:100%;height:100%;object-fit:cover">` : '<i class="fa-solid fa-user text-5xl text-white flex items-center justify-center h-full"></i>';
-    document.getElementById('profileName').innerHTML = `${escapeHtml(userData.name)} ${userData.verified === 'blue' ? '<i class="fa-solid fa-circle-check verified-badge-blue" style="color: #1D9BF0; font-size: 20px;"></i>' : ''}${userData.verified === 'gold' ? '<i class="fa-solid fa-circle-check verified-badge-gold" style="color: #FFD700; font-size: 20px;"></i>' : ''}`;
-    document.getElementById('profileBio').textContent = userData.bio || "مرحباً! أنا في ZORAK ✨";
+    document.getElementById('profileName').innerHTML = `${escapeHtml(userData.name)} ${userData.verified ? '<i class="fa-solid fa-circle-check verified-badge" style="color: #f59e0b; font-size: 20px;"></i>' : ''}`;
+    document.getElementById('profileBio').textContent = userData.bio || "مرحباً! أنا في LUME 🌟";
     const websiteEl = document.getElementById('profileWebsite');
-    if (userData.website) websiteEl.innerHTML = `<a href="${userData.website}" target="_blank" style="color: #7c3aed;">${userData.website}</a>`;
+    if (userData.website) websiteEl.innerHTML = `<a href="${userData.website}" target="_blank" style="color: #f59e0b;">${userData.website}</a>`;
     else websiteEl.innerHTML = '';
     const followersSnapshot = await db.ref(`followers/${userId}`).once('value');
     const followingSnapshot = await db.ref(`following/${userId}`).once('value');
@@ -1372,7 +1355,7 @@ async function openProfile(userId) {
     } else {
         let adminButton = '';
         if (currentUser.isAdmin || currentUser.email === ADMIN_EMAIL) adminButton = `<button class="profile-btn profile-btn-primary" onclick="openAdminPanel()"><i class="fa-solid fa-screwdriver-wrench"></i> لوحة التحكم</button>`;
-        buttonsDiv.innerHTML = `<button class="profile-btn" onclick="openEditProfileModal()"><i class="fa-regular fa-pen-to-square"></i> تعديل</button><button class="profile-btn" onclick="changeAvatar()"><i class="fa-solid fa-camera"></i> صورة</button><button class="profile-btn" onclick="changeCover()"><i class="fa-solid fa-image"></i> غلاف</button>${adminButton}<button class="profile-btn profile-logout-btn" onclick="logout()"><i class="fa-solid fa-right-from-bracket"></i> تسجيل الخروج</button>`;
+        buttonsDiv.innerHTML = `<button class="profile-btn" onclick="openEditProfileModal()"><i class="fa-regular fa-pen-to-square"></i> تعديل</button><button class="profile-btn" onclick="changeAvatar()"><i class="fa-solid fa-camera"></i> صورة</button><button class="profile-btn" onclick="changeCover()"><i class="fa-solid fa-image"></i> غلاف</button>${adminButton}`;
     }
     await loadProfilePosts(userId);
     document.getElementById('profilePanel').classList.add('open');
@@ -1495,7 +1478,7 @@ async function loadChatMessages(userId) {
         for (const msg of messagesArray) {
             const isSent = msg.senderId === currentUser.uid;
             const isRead = msg.read;
-            html += `<div class="chat-message ${isSent ? 'sent' : ''}"><div class="message-bubble ${isSent ? 'sent' : ''}">${msg.text ? escapeHtml(msg.text) : ''}${msg.imageUrl ? `<img src="${msg.imageUrl}" class="message-image" style="max-width: 200px; border-radius: 12px; margin-top: 8px; cursor: pointer;" onclick="openMediaViewer('${msg.imageUrl}', 'image')">` : ''}${msg.audioUrl ? `<audio controls class="audio-player" style="margin-top: 8px; height: 36px;" src="${msg.audioUrl}"></audio>` : ''}</div>${isSent ? `<div class="message-status" style="font-size: 10px; color: #9ca3af; margin-top: 4px;"><i class="fa-solid fa-check${isRead ? '-double' : ''}"></i></div>` : ''}</div>`;
+            html += `<div class="chat-message ${isSent ? 'sent' : ''}"><div class="message-bubble ${isSent ? 'sent' : ''}">${msg.text ? escapeHtml(msg.text) : ''}${msg.imageUrl ? `<img src="${msg.imageUrl}" class="message-image" style="max-width: 200px; border-radius: 12px; margin-top: 8px; cursor: pointer;" onclick="openImageViewer(['${msg.imageUrl}'], 0)">` : ''}${msg.audioUrl ? `<audio controls class="audio-player" style="margin-top: 8px; height: 36px;" src="${msg.audioUrl}"></audio>` : ''}</div>${isSent ? `<div class="message-status" style="font-size: 10px; color: #9ca3af; margin-top: 4px;"><i class="fa-solid fa-check${isRead ? '-double' : ''}"></i></div>` : ''}</div>`;
         }
         container.innerHTML = html;
         container.scrollTop = container.scrollHeight;
@@ -1522,12 +1505,14 @@ async function sendChatMessage() {
 async function sendChatImage(input) {
     const file = input.files[0];
     if (file && currentChatUser) {
-        const url = await uploadToCloudinary(file);
+        showToast('🔄 جاري رفع الصورة...');
+        const url = await uploadToCloudinaryWithProgress(file, (percent) => {
+            console.log(`Upload progress: ${percent}%`);
+        });
         if (url) {
             const chatId = getChatId(currentUser.uid, currentChatUser.uid);
             await db.ref(`chats/${chatId}`).push({ senderId: currentUser.uid, imageUrl: url, timestamp: Date.now(), read: false });
             showToast('✅ تم إرسال الصورة');
-            loadChatMessages(currentChatUser.uid);
         }
     }
     input.value = '';
@@ -1561,7 +1546,7 @@ async function openConversations() {
         const messagesSnapshot = await db.ref(`chats/${getChatId(currentUser.uid, conv.userId)}`).once('value');
         const messages = messagesSnapshot.val();
         if (messages) unreadCount = Object.values(messages).filter(m => !m.read && m.senderId !== currentUser.uid).length;
-        html += `<div class="follower-item" onclick="closeConversations(); openChat('${conv.userId}')"><div class="post-avatar" style="width: 48px; height: 48px;">${conv.userData?.avatar ? `<img src="${conv.userData.avatar}">` : '<i class="fa-solid fa-user text-white text-xl flex items-center justify-center h-full"></i>'}</div><div style="flex: 1;"><div style="font-weight: 600;">${escapeHtml(conv.userData?.name || 'مستخدم')}</div><div style="font-size: 12px; color: #9ca3af;">${conv.lastMessage.text ? conv.lastMessage.text.substring(0, 30) : (conv.lastMessage.audioUrl ? '🎤 رسالة صوتية' : (conv.lastMessage.imageUrl ? '🖼️ صورة' : ''))}</div></div>${unreadCount > 0 ? `<div style="background: linear-gradient(135deg, #667eea, #764ba2); color: white; border-radius: 50%; width: 20px; height: 20px; display: flex; align-items: center; justify-content: center; font-size: 10px;">${unreadCount}</div>` : ''}</div>`;
+        html += `<div class="follower-item" onclick="closeConversations(); openChat('${conv.userId}')"><div class="post-avatar" style="width: 48px; height: 48px;">${conv.userData?.avatar ? `<img src="${conv.userData.avatar}">` : '<i class="fa-solid fa-user text-white text-xl flex items-center justify-center h-full"></i>'}</div><div style="flex: 1;"><div style="font-weight: 600;">${escapeHtml(conv.userData?.name || 'مستخدم')}</div><div style="font-size: 12px; color: #9ca3af;">${conv.lastMessage.text ? conv.lastMessage.text.substring(0, 30) : (conv.lastMessage.audioUrl ? '🎤 رسالة صوتية' : (conv.lastMessage.imageUrl ? '🖼️ صورة' : ''))}</div></div>${unreadCount > 0 ? `<div style="background: linear-gradient(135deg, #f59e0b, #ea580c); color: white; border-radius: 50%; width: 20px; height: 20px; display: flex; align-items: center; justify-content: center; font-size: 10px;">${unreadCount}</div>` : ''}</div>`;
     }
     conversationsList.innerHTML = html;
     document.getElementById('conversationsPanel')?.classList.add('open');
@@ -1598,7 +1583,7 @@ async function openNotifications() {
     let html = '';
     const sorted = Object.entries(notifications).sort((a, b) => b[1].timestamp - a[1].timestamp);
     for (const [id, notif] of sorted) {
-        html += `<div class="follower-item" onclick="markNotificationRead('${id}'); ${notif.type === 'like' ? `openComments('${notif.postId}')` : notif.type === 'comment' ? `openComments('${notif.postId}')` : notif.type === 'call' ? `startVideoCallWithUser('${notif.userId}')` : `openProfile('${notif.userId}')`}"><div class="post-avatar" style="width: 44px; height: 44px; background: linear-gradient(135deg, #667eea, #764ba2);"><i class="fa-solid ${notif.type === 'like' ? 'fa-heart' : notif.type === 'comment' ? 'fa-comment' : notif.type === 'call' ? 'fa-video' : 'fa-user-plus'} text-white text-xl flex items-center justify-center h-full"></i></div><div style="flex: 1;"><div><span style="font-weight: 600;">${escapeHtml(notif.userName)}</span> ${notif.type === 'like' ? '❤️ أعجب بمنشورك' : notif.type === 'comment' ? `💬 علق على منشورك: ${notif.text?.substring(0, 50)}` : notif.type === 'call' ? '📹 أجرى مكالمة فيديو معك' : '➕ بدأ بمتابعتك'}</div><div style="font-size: 11px; color: #9ca3af;">${formatTime(notif.timestamp)}</div></div></div>`;
+        html += `<div class="follower-item" onclick="markNotificationRead('${id}'); ${notif.type === 'like' ? `openComments('${notif.postId}')` : notif.type === 'comment' ? `openComments('${notif.postId}')` : notif.type === 'call' ? `startVideoCallWithUser('${notif.userId}')` : `openProfile('${notif.userId}')`}"><div class="post-avatar" style="width: 44px; height: 44px; background: linear-gradient(135deg, #f59e0b, #ea580c);"><i class="fa-solid ${notif.type === 'like' ? 'fa-heart' : notif.type === 'comment' ? 'fa-comment' : notif.type === 'call' ? 'fa-video' : 'fa-user-plus'} text-white text-xl flex items-center justify-center h-full"></i></div><div style="flex: 1;"><div><span style="font-weight: 600;">${escapeHtml(notif.userName)}</span> ${notif.type === 'like' ? '🧡 أعجب بمنشورك' : notif.type === 'comment' ? `💬 علق على منشورك: ${notif.text?.substring(0, 50)}` : notif.type === 'call' ? '📹 أجرى مكالمة فيديو معك' : '➕ بدأ بمتابعتك'}</div><div style="font-size: 11px; color: #9ca3af;">${formatTime(notif.timestamp)}</div></div></div>`;
     }
     container.innerHTML = html;
     document.getElementById('notificationsPanel')?.classList.add('open');
@@ -1653,8 +1638,7 @@ async function openAdminPanel() {
         for (const [uid, user] of Object.entries(usersSnapshot.val())) {
             if (uid !== currentUser.uid) {
                 const isMuted = await isUserMuted(uid);
-                const isVerified = user.verified;
-                usersHtml += `<div class="admin-item"><div><div class="admin-item-name" style="font-weight: 600;">${escapeHtml(user.name)}</div><div class="admin-item-email" style="font-size: 12px; color: #9ca3af;">${escapeHtml(user.email)}</div></div><div>${!isVerified ? `<button class="admin-verify-blue" onclick="verifyUser('${uid}', 'blue')">✅ توثيق أزرق</button><button class="admin-verify-gold" onclick="verifyUser('${uid}', 'gold')">👑 توثيق ذهبي</button>` : `<span style="color: ${isVerified === 'gold' ? '#FFD700' : '#1D9BF0'}; font-size: 12px;">✅ ${isVerified === 'gold' ? 'موثق ذهبي' : 'موثق أزرق'}</span>`}<button class="admin-mute-btn" onclick="muteUser('${uid}', 60)">🔇 تقييد</button><button class="admin-delete-btn" onclick="deleteUser('${uid}')">🗑️ حذف</button></div></div>`;
+                usersHtml += `<div class="admin-item"><div><div class="admin-item-name" style="font-weight: 600;">${escapeHtml(user.name)}</div><div class="admin-item-email" style="font-size: 12px; color: #9ca3af;">${escapeHtml(user.email)}</div></div><div>${!user.verified ? `<button class="admin-verify-btn" onclick="verifyUser('${uid}')">✅ توثيق</button>` : '<span style="color: #10b981; font-size: 12px;">✅ موثق</span>'}<button class="admin-mute-btn" onclick="muteUser('${uid}', 60)">🔇 تقييد</button><button class="admin-delete-btn" onclick="deleteUser('${uid}')">🗑️ حذف</button></div></div>`;
             }
         }
     }
@@ -1670,11 +1654,11 @@ async function openAdminPanel() {
     document.getElementById('adminPanel').classList.add('open');
 }
 
-async function verifyUser(userId, type) {
-    await db.ref(`users/${userId}`).update({ verified: type });
-    showToast(`✅ تم توثيق المستخدم ${type === 'blue' ? 'بعلامة زرقاء' : 'بعلامة ذهبية'}`);
+async function verifyUser(userId) {
+    await db.ref(`users/${userId}`).update({ verified: true });
+    showToast('✅ تم توثيق المستخدم بنجاح');
     if (currentUser && currentUser.uid === userId) {
-        currentUser.verified = type;
+        currentUser.verified = true;
         const userSnapshot = await db.ref(`users/${userId}`).once('value');
         const userData = userSnapshot.val();
         currentUser = { ...currentUser, ...userData };
@@ -1723,17 +1707,16 @@ function closeFollowers() {
     document.getElementById('followersPanel').classList.remove('open');
 }
 
-// ==================== Stories ====================
+// ==================== Stories (placeholder for future) ====================
 async function openStories() {
-    showToast('📸 القصص قريباً في ZORAK!');
+    showToast('📸 القصص قريباً في LUME!');
 }
 
 // ==================== Close Functions ====================
 function closeCompose() {
     document.getElementById('composeModal').classList.remove('open');
     document.getElementById('postText').value = '';
-    document.getElementById('mediaPreview').innerHTML = '';
-    document.getElementById('mediaPreview').style.display = 'none';
+    removeSelectedMedia();
     document.getElementById('pollBuilder').style.display = 'none';
     selectedMediaFile = null;
     editingPostId = null;
@@ -1791,37 +1774,6 @@ function switchTab(tab) {
     }
 }
 
-function previewMedia(input, type) {
-    const file = input.files[0];
-    if (file) {
-        selectedMediaFile = file;
-        const preview = document.getElementById('mediaPreview');
-        const reader = new FileReader();
-        reader.onload = function(e) {
-            if (type === 'image') preview.innerHTML = `<div style="position: relative;"><img src="${e.target.result}" style="max-height: 250px; border-radius: 12px; width: 100%; object-fit: cover;"><div class="remove-media" onclick="removeSelectedMedia()" style="position: absolute; top: 8px; right: 8px; background: black; color: white; border-radius: 50%; width: 24px; height: 24px; display: flex; align-items: center; justify-content: center; cursor: pointer;"><i class="fa-solid fa-times"></i></div></div>`;
-            else if (type === 'video') preview.innerHTML = `<div style="position: relative;"><video src="${e.target.result}" controls style="max-height: 250px; border-radius: 12px; width: 100%;"></video><div class="remove-media" onclick="removeSelectedMedia()" style="position: absolute; top: 8px; right: 8px; background: black; color: white; border-radius: 50%; width: 24px; height: 24px; display: flex; align-items: center; justify-content: center; cursor: pointer;"><i class="fa-solid fa-times"></i></div></div>`;
-            preview.style.display = 'block';
-        };
-        reader.readAsDataURL(file);
-    }
-}
-
-function removeSelectedMedia() {
-    selectedMediaFile = null;
-    document.getElementById('mediaPreview').innerHTML = '';
-    document.getElementById('mediaPreview').style.display = 'none';
-}
-
-// ==================== Video Functions ====================
-function toggleVideoPlay(container) {
-    const video = container.querySelector('video');
-    if (video.paused) {
-        video.play();
-    } else {
-        video.pause();
-    }
-}
-
 // ==================== Last Seen Update ====================
 setInterval(async () => {
     if (currentUser) await db.ref(`users/${currentUser.uid}/lastSeen`).set(Date.now());
@@ -1847,14 +1799,20 @@ auth.onAuthStateChanged(async (user) => {
             currentUser = { ...currentUser, ...snapshot.val() };
         } else {
             await db.ref(`users/${user.uid}`).set({
-                uid: user.uid, name: user.displayName || user.email.split('@')[0],
-                email: user.email, bio: "مرحباً! أنا في ZORAK ✨", avatar: "", cover: "",
-                website: "", verified: false, isAdmin: user.email === ADMIN_EMAIL,
-                blockedUsers: {}, mutedUntil: 0, createdAt: Date.now()
+                name: user.displayName || user.email.split('@')[0],
+                email: user.email,
+                bio: "مرحباً! أنا في LUME 🌟",
+                avatar: "",
+                cover: "",
+                website: "",
+                verified: false,
+                isAdmin: user.email === ADMIN_EMAIL,
+                blockedUsers: {},
+                mutedUntil: 0,
+                createdAt: Date.now()
             });
             currentUser.isAdmin = user.email === ADMIN_EMAIL;
         }
-        document.getElementById('authScreen').style.display = 'none';
         document.getElementById('mainApp').style.display = 'block';
         
         const savedTheme = localStorage.getItem('theme');
@@ -1879,7 +1837,8 @@ auth.onAuthStateChanged(async (user) => {
         loadDndStatus();
         checkScheduledPosts();
     } else {
-        document.getElementById('authScreen').style.display = 'flex';
-        document.getElementById('mainApp').style.display = 'none';
+        window.location.href = 'auth.html';
     }
 });
+
+console.log('✅ LUME Ultimate System Ready with Enhanced Upload Progress Bar');
