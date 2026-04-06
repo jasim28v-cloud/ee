@@ -1,4 +1,4 @@
-// ==================== LUME - Firebase Configuration ====================
+// ==================== LUME 2.0 - Firebase Configuration ====================
 const firebaseConfig = {
     apiKey: "AIzaSyD436FkIwy_e9tK5aW1DVPfUpeGZHeedUk",
     authDomain: "zorak-e0a51.firebaseapp.com",
@@ -31,4 +31,4 @@ const ADMIN_PASSWORD = 'nn2314nn';
 // Site Name
 const SITE_NAME = 'LUME';
 
-console.log('✅ LUME - Firebase, Cloudinary & Agora Ready');
+console.log('✅ LUME 2.0 - Firebase, Cloudinary & Agora Ready');
