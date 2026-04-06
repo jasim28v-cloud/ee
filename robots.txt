@@ -1,0 +1,10 @@
+User-agent: *
+Allow: /
+Allow: /*.mp4$
+Allow: /*.webm$
+Allow: /*.jpg$
+Allow: /*.jpeg$
+Allow: /*.png$
+Allow: /*.webp$
+
+Sitemap: https://ki-fsqn.onrender.com/sitemap.xml
