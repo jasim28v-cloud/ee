@@ -1,4 +1,4 @@
-// ==================== LUME - المتغيرات العامة ====================
+// ==================== LUME 2.0 - المتغيرات العامة ====================
 let currentUser = null;
 let currentPostId = null;
 let currentChatUser = null;
@@ -21,7 +21,7 @@ let allPostsCache = [];
 let currentDisplayCount = 0;
 let isLoadingPosts = false;
 let hasMorePosts = true;
-const POSTS_PER_PAGE = 8;
+const POSTS_PER_PAGE = 10;
 let scrollListenerAdded = false;
 
 // ==================== Agora Variables ====================
@@ -32,8 +32,11 @@ let isCallActive = false;
 // ==================== Bad Words ====================
 let badWordsList = [];
 
+// ==================== Admin Chart ====================
+let adminChart = null;
+
 // ==================== Helper Functions ====================
-function showToast(message, duration = 2000) {
+function showToast(message, duration = 2500) {
     const toast = document.getElementById('customToast');
     if (!toast) return;
     toast.textContent = message;
@@ -63,6 +66,11 @@ function formatTime(timestamp) {
     const minutes = Math.floor(seconds / 60);
     const hours = Math.floor(minutes / 60);
     const days = Math.floor(hours / 24);
+    const weeks = Math.floor(days / 7);
+    const months = Math.floor(days / 30);
+    
+    if (months > 0) return `${months} شهر`;
+    if (weeks > 0) return `${weeks} أسبوع`;
     if (days > 0) return `${days} يوم`;
     if (hours > 0) return `${hours} ساعة`;
     if (minutes > 0) return `${minutes} دقيقة`;
@@ -141,7 +149,7 @@ async function loadBadWordsList() {
     } else {
         badWordsList = [];
     }
-    console.log('📝 LUME - Bad words loaded:', badWordsList.length);
+    console.log('📝 LUME 2.0 - Bad words loaded:', badWordsList.length);
 }
 
 async function addBadWord(word) {
@@ -263,7 +271,7 @@ function addPollOption() {
         newInput.placeholder = `خيار ${inputCount + 1}`;
         newInput.className = 'chat-input';
         newInput.style.width = '100%';
-        newInput.style.marginBottom = '4px';
+        newInput.style.marginBottom = '6px';
         container.insertBefore(newInput, container.querySelector('button'));
     } else {
         showToast('لا يمكن إضافة أكثر من 6 خيارات');
@@ -274,8 +282,8 @@ function createHeartAnimation(x, y) {
     const heart = document.createElement('div');
     heart.className = 'heart-animation';
     heart.innerHTML = '🧡';
-    heart.style.left = x + 'px';
-    heart.style.top = y + 'px';
+    heart.style.left = (x - 30) + 'px';
+    heart.style.top = (y - 30) + 'px';
     document.body.appendChild(heart);
     setTimeout(() => heart.remove(), 600);
 }
@@ -290,7 +298,24 @@ function toggleVideoPlay(container) {
     }
 }
 
-// ==================== Settings ====================
+// ==================== Theme & Settings ====================
+function toggleTheme() {
+    document.body.classList.toggle('light-mode');
+    const isLight = document.body.classList.contains('light-mode');
+    const themeIcon = document.getElementById('themeToggle');
+    if (themeIcon) {
+        if (isLight) {
+            themeIcon.classList.remove('fa-sun');
+            themeIcon.classList.add('fa-moon');
+        } else {
+            themeIcon.classList.remove('fa-moon');
+            themeIcon.classList.add('fa-sun');
+        }
+    }
+    localStorage.setItem('theme', isLight ? 'light' : 'dark');
+    showToast(isLight ? '☀️ الوضع النهاري' : '🌙 الوضع الليلي');
+}
+
 function toggleReadMode() {
     readModeActive = !readModeActive;
     const toggle = document.getElementById('readModeToggle');
@@ -298,12 +323,13 @@ function toggleReadMode() {
         document.body.classList.add('read-mode');
         toggle.classList.add('active');
         localStorage.setItem('readMode', 'true');
+        showToast('📖 تم تفعيل وضع القراءة - خط أكبر وتباين أعلى');
     } else {
         document.body.classList.remove('read-mode');
         toggle.classList.remove('active');
         localStorage.setItem('readMode', 'false');
+        showToast('📖 تم إلغاء وضع القراءة');
     }
-    showToast(readModeActive ? '📖 تم تفعيل وضع القراءة' : '📖 تم إلغاء وضع القراءة');
 }
 
 function toggleHideLikes() {
@@ -312,29 +338,13 @@ function toggleHideLikes() {
     if (hideLikesActive) {
         toggle.classList.add('active');
         localStorage.setItem('hideLikes', 'true');
+        showToast('🔒 تم إخفاء عدد الإعجابات - الخصوصية أولاً');
     } else {
         toggle.classList.remove('active');
         localStorage.setItem('hideLikes', 'false');
+        showToast('🔒 تم إظهار عدد الإعجابات');
     }
-    showToast(hideLikesActive ? '🔒 تم إخفاء عدد الإعجابات' : '🔒 تم إظهار عدد الإعجابات');
     refreshFeedCache();
-}
-
-function toggleTheme() {
-    document.body.classList.toggle('dark-mode');
-    const isDark = document.body.classList.contains('dark-mode');
-    const themeIcon = document.getElementById('themeToggle');
-    if (themeIcon) {
-        if (isDark) {
-            themeIcon.classList.remove('fa-moon');
-            themeIcon.classList.add('fa-sun');
-        } else {
-            themeIcon.classList.remove('fa-sun');
-            themeIcon.classList.add('fa-moon');
-        }
-    }
-    localStorage.setItem('theme', isDark ? 'dark' : 'light');
-    showToast(isDark ? '🌙 الوضع الليلي' : '☀️ الوضع النهاري');
 }
 
 async function toggleDoNotDisturb() {
@@ -347,7 +357,7 @@ async function toggleDoNotDisturb() {
     } else {
         dndToggle.classList.add('active');
         await db.ref(`users/${currentUser.uid}/dnd`).set(true);
-        showToast('🔕 تم تفعيل عدم الإزعاج');
+        showToast('🔕 تم تفعيل عدم الإزعاج - لن تصل إليك إشعارات');
     }
 }
 
@@ -362,13 +372,13 @@ async function loadDndStatus() {
 // ==================== Pin Comment & Quote ====================
 async function pinComment(postId, commentId) {
     await db.ref(`posts/${postId}/pinnedComment`).set(commentId);
-    showToast('📌 تم تثبيت التعليق');
+    showToast('📌 تم تثبيت التعليق في أعلى القائمة');
     loadComments(postId);
 }
 
 function quotePost(postId, originalText, originalUser) {
     openCompose();
-    document.getElementById('postText').value = `اقتباس من @${originalUser}: "${originalText.substring(0, 100)}"\n\n`;
+    document.getElementById('postText').value = `💬 اقتباس من @${originalUser}: "${originalText.substring(0, 150)}"\n\n`;
     window.quoteOriginalPostId = postId;
 }
 
@@ -396,10 +406,10 @@ async function startVideoCallWithAgora(channelName, userId) {
             if (mediaType === "audio") user.audioTrack.play();
         });
         isCallActive = true;
-        showToast('📹 تم بدء المكالمة');
+        showToast('📹 تم بدء المكالمة - يمكنك الآن التحدث');
     } catch (error) {
         console.error('Video call error:', error);
-        showToast('❌ فشل بدء المكالمة');
+        showToast('❌ فشل بدء المكالمة - تحقق من صلاحيات الكاميرا والميكروفون');
     }
 }
 
@@ -442,7 +452,7 @@ async function logout() {
     try {
         await auth.signOut();
         localStorage.removeItem('auth_logged_in');
-        showToast('👋 تم تسجيل الخروج بنجاح');
+        showToast('👋 تم تسجيل الخروج بنجاح، نراكم قريباً!');
         setTimeout(() => {
             window.location.href = 'auth.html';
         }, 1000);
@@ -465,14 +475,14 @@ async function openProfileViews() {
     const views = snapshot.val();
     const container = document.getElementById('profileViewsList');
     if (!views) {
-        container.innerHTML = '<div class="text-center p-4 text-gray-500">👁️ لا توجد مشاهدات بعد</div>';
+        container.innerHTML = '<div class="text-center p-6 opacity-60">👁️ لا توجد مشاهدات بعد</div>';
     } else {
         let html = '';
         const viewsArray = Object.values(views).sort((a, b) => b.timestamp - a.timestamp).slice(0, 50);
         for (const view of viewsArray) {
             html += `<div class="follower-item" onclick="closeProfileViews(); openProfile('${view.viewerId}')">
-                <div class="post-avatar" style="width: 44px; height: 44px;">${view.viewerAvatar ? `<img src="${view.viewerAvatar}">` : '<i class="fa-solid fa-user text-white text-xl flex items-center justify-center h-full"></i>'}</div>
-                <div><div style="font-weight: 600;">${escapeHtml(view.viewerName)}</div><div style="font-size: 11px; color: #9ca3af;">${formatTime(view.timestamp)}</div></div>
+                <div class="post-avatar" style="width: 48px; height: 48px;">${view.viewerAvatar ? `<img src="${view.viewerAvatar}">` : '<i class="fa-solid fa-user text-white text-xl flex items-center justify-center h-full"></i>'}</div>
+                <div><div style="font-weight: 700;">${escapeHtml(view.viewerName)}</div><div style="font-size: 11px; opacity: 0.6;">${formatTime(view.timestamp)}</div></div>
             </div>`;
         }
         container.innerHTML = html;
@@ -490,10 +500,10 @@ async function savePost(postId) {
     const snapshot = await saveRef.once('value');
     if (snapshot.exists()) {
         await saveRef.remove();
-        showToast('📌 تم إزالة من القائمة المحفوظة');
+        showToast('📌 تم إزالة المنشور من المحفوظات');
     } else {
         await saveRef.set(true);
-        showToast('💾 تم حفظ المنشور');
+        showToast('💾 تم حفظ المنشور - يمكنك مشاهدته لاحقاً');
     }
     refreshFeedCache();
 }
@@ -503,7 +513,7 @@ async function openSavedPosts() {
     const savedPosts = snapshot.val();
     const container = document.getElementById('savedPostsGrid');
     if (!savedPosts) {
-        container.innerHTML = '<div class="text-center p-8 text-gray-500" style="grid-column: span 3;">📭 لا توجد منشورات محفوظة</div>';
+        container.innerHTML = '<div class="text-center p-8 opacity-60" style="grid-column: span 3;">📭 لا توجد منشورات محفوظة</div>';
     } else {
         let html = '';
         for (const postId of Object.keys(savedPosts)) {
@@ -511,11 +521,11 @@ async function openSavedPosts() {
             const post = postSnapshot.val();
             if (post) {
                 html += `<div class="grid-item" onclick="openComments('${postId}')">
-                    ${post.mediaUrl ? (post.mediaType === 'image' ? `<img src="${post.mediaUrl}">` : `<video src="${post.mediaUrl}"></video>`) : '<div class="flex items-center justify-center h-full bg-gray-100 dark:bg-gray-800"><i class="fa-regular fa-file-lines text-2xl text-gray-500"></i></div>'}
+                    ${post.mediaUrl ? (post.mediaType === 'image' ? `<img src="${post.mediaUrl}">` : `<video src="${post.mediaUrl}"></video>`) : '<div style="background: rgba(255,255,255,0.05); height: 100%; display: flex; align-items: center; justify-content: center;"><i class="fa-regular fa-file-lines text-3xl opacity-50"></i></div>'}
                 </div>`;
             }
         }
-        container.innerHTML = html || '<div class="text-center p-8 text-gray-500" style="grid-column: span 3;">📭 لا توجد منشورات محفوظة</div>';
+        container.innerHTML = html || '<div class="text-center p-8 opacity-60" style="grid-column: span 3;">📭 لا توجد منشورات محفوظة</div>';
     }
     document.getElementById('savedPostsPanel').classList.add('open');
 }
@@ -529,10 +539,10 @@ async function pinPost(postId) {
     const currentPinned = await db.ref(`users/${currentUser.uid}/pinnedPost`).once('value');
     if (currentPinned.val() === postId) {
         await db.ref(`users/${currentUser.uid}/pinnedPost`).remove();
-        showToast('📌 تم إلغاء تثبيت المنشور');
+        showToast('📌 تم إلغاء تثبيت المنشور من ملفك الشخصي');
     } else {
         await db.ref(`users/${currentUser.uid}/pinnedPost`).set(postId);
-        showToast('📌 تم تثبيت المنشور');
+        showToast('📌 تم تثبيت المنشور في أعلى ملفك الشخصي');
     }
     refreshFeedCache();
     if (currentProfileUser) loadProfilePosts(currentProfileUser);
@@ -564,7 +574,7 @@ async function submitReport() {
         reporterId: currentUser.uid, reporterName: currentUser.displayName || currentUser.name,
         reason: selectedReportReason, timestamp: Date.now()
     });
-    showToast('📢 تم إرسال البلاغ، شكراً لك');
+    showToast('📢 تم إرسال البلاغ بنجاح، شكراً للمساهمة في تحسين المجتمع');
     closeReportModal();
 }
 
@@ -572,7 +582,7 @@ async function submitReport() {
 async function muteUser(userId, minutes = 60) {
     const muteUntil = Date.now() + (minutes * 60 * 1000);
     await db.ref(`users/${userId}/mutedUntil`).set(muteUntil);
-    showToast(`🔇 تم تقييد المستخدم لمدة ${minutes} دقيقة`);
+    showToast(`🔇 تم تقييد المستخدم لمدة ${minutes} دقيقة - لا يمكنه النشر أو التعليق`);
     openAdminPanel();
 }
 
@@ -589,7 +599,7 @@ async function changeAvatar() {
     input.onchange = async (e) => {
         const file = e.target.files[0];
         if (file) {
-            showToast('🔄 جاري رفع الصورة...');
+            showToast('🔄 جاري رفع الصورة الشخصية...');
             const url = await uploadToCloudinaryWithProgress(file, (percent) => {
                 console.log(`Upload progress: ${percent}%`);
             });
@@ -598,7 +608,7 @@ async function changeAvatar() {
                 currentUser.avatar = url;
                 if (currentProfileUser) openProfile(currentProfileUser);
                 else openProfile(currentUser.uid);
-                showToast('🖼️ تم تغيير الصورة الشخصية بنجاح');
+                showToast('🖼️ تم تغيير الصورة الشخصية بنجاح ✨');
             }
         }
     };
@@ -612,7 +622,7 @@ async function changeCover() {
     input.onchange = async (e) => {
         const file = e.target.files[0];
         if (file) {
-            showToast('🔄 جاري رفع الصورة...');
+            showToast('🔄 جاري رفع صورة الغلاف...');
             const url = await uploadToCloudinaryWithProgress(file, (percent) => {
                 console.log(`Upload progress: ${percent}%`);
             });
@@ -621,7 +631,7 @@ async function changeCover() {
                 currentUser.cover = url;
                 if (currentProfileUser) openProfile(currentProfileUser);
                 else openProfile(currentUser.uid);
-                showToast('🖼️ تم تغيير صورة الغلاف بنجاح');
+                showToast('🖼️ تم تغيير صورة الغلاف بنجاح ✨');
             }
         }
     };
@@ -630,7 +640,7 @@ async function changeCover() {
 
 async function blockUser(userId) {
     await db.ref(`users/${currentUser.uid}/blockedUsers/${userId}`).set(true);
-    showToast('🚫 تم حظر المستخدم');
+    showToast('🚫 تم حظر المستخدم - لن ترى منشوراته بعد الآن');
     refreshFeedCache();
 }
 
@@ -691,7 +701,7 @@ async function createPost() {
     if (containsBadWords(text)) return showToast('⚠️ المنشور يحتوي على كلمات ممنوعة');
     if (!text && !selectedMediaFile) return showToast('⚠️ الرجاء كتابة نص أو إضافة وسائط');
     text = filterBadWords(text);
-    if (await isUserMuted(currentUser.uid)) return showToast('⚠️ أنت مقيد مؤقتاً ولا يمكنك النشر');
+    if (await isUserMuted(currentUser.uid)) return showToast('⚠️ أنت مقيد مؤقتاً ولا يمكنك النشر حالياً');
 
     if (selectedMediaFile) {
         progressContainer.style.display = 'block';
@@ -778,12 +788,12 @@ async function createPost() {
     
     await refreshFeedCache();
     loadTrendingHashtags();
-    showToast('✨ تم نشر المنشور بنجاح!');
+    showToast('✨ تم نشر المنشور بنجاح! شارك مع أصدقائك ✨');
 }
 
 // ==================== Delete Post ====================
 async function deletePost(postId) {
-    if (!confirm('⚠️ هل أنت متأكد من حذف هذا المنشور؟')) return;
+    if (!confirm('⚠️ هل أنت متأكد من حذف هذا المنشور؟ لا يمكن التراجع عن هذا الإجراء')) return;
     const postSnapshot = await db.ref(`posts/${postId}`).once('value');
     const post = postSnapshot.val();
     if (post.userId !== currentUser.uid && !currentUser.isAdmin) return showToast('❌ لا يمكنك حذف منشور ليس لك');
@@ -795,7 +805,7 @@ async function deletePost(postId) {
     await db.ref(`posts/${postId}`).remove();
     await refreshFeedCache();
     loadTrendingHashtags();
-    showToast('🗑️ تم حذف المنشور');
+    showToast('🗑️ تم حذف المنشور بنجاح');
 }
 
 // ==================== Like Post ====================
@@ -850,7 +860,7 @@ async function sharePost(postId) {
         originalPostId: postId, originalUser: post.userName, timestamp: Date.now()
     });
     await refreshFeedCache();
-    showToast('🔄 تمت المشاركة!');
+    showToast('🔄 تمت المشاركة! شكراً لمشاركة المحتوى مع الآخرين');
 }
 
 // ==================== Vote Poll ====================
@@ -858,9 +868,10 @@ async function votePoll(postId, optionIndex) {
     const postRef = db.ref(`posts/${postId}/poll`);
     const snapshot = await postRef.once('value');
     const poll = snapshot.val();
-    if (poll && poll.votes && poll.votes[currentUser.uid]) return showToast('✅ لقد صوت مسبقاً');
+    if (poll && poll.votes && poll.votes[currentUser.uid]) return showToast('✅ لقد صوت مسبقاً على هذا التصويت');
     await db.ref(`posts/${postId}/poll/votes/${currentUser.uid}`).set(optionIndex);
     await db.ref(`posts/${postId}/poll/totalVotes`).transaction(current => (current || 0) + 1);
+    showToast('🗳️ تم تسجيل صوتك بنجاح!');
     refreshFeedCache();
 }
 
@@ -884,7 +895,7 @@ async function checkScheduledPosts() {
                     likes: {}, views: 0, commentsCount: 0, edited: false, timestamp: Date.now()
                 });
                 await db.ref(`scheduledPosts/${currentUser.uid}/${id}`).remove();
-                showToast('📅 تم نشر المنشور المجدول');
+                showToast('📅 تم نشر المنشور المجدول تلقائياً');
                 await refreshFeedCache();
             }
         }
@@ -901,14 +912,18 @@ async function loadTrendingHashtags() {
         trending.push({ tag, count: Object.keys(posts).length });
     }
     trending.sort((a, b) => b.count - a.count);
-    const top5 = trending.slice(0, 5);
+    const top8 = trending.slice(0, 8);
     const container = document.getElementById('trendingList');
     if (container) {
-        container.innerHTML = top5.map((item, index) => `
+        container.innerHTML = top8.map((item, index) => `
             <div class="trending-item" onclick="searchHashtag('${item.tag}')">
-                <div class="trending-rank" style="font-size: 12px; color: #f59e0b;">#${index + 1}</div>
-                <div class="trending-hashtag" style="font-weight: 600;">#${escapeHtml(item.tag)}</div>
-                <div class="trending-count" style="font-size: 11px; color: #9ca3af;">${item.count} منشور</div>
+                <div style="display: flex; justify-content: space-between; align-items: center;">
+                    <div>
+                        <div class="trending-rank" style="font-size: 11px; color: #f59e0b;">#${index + 1}</div>
+                        <div class="trending-hashtag" style="font-weight: 700;">#${escapeHtml(item.tag)}</div>
+                    </div>
+                    <div class="trending-count" style="font-size: 12px; opacity: 0.6;">${item.count} منشور</div>
+                </div>
             </div>
         `).join('');
     }
@@ -925,7 +940,7 @@ async function loadAllPostsToCache() {
     const posts = snapshot.val();
     
     if (!posts || Object.keys(posts).length === 0) {
-        feedContainer.innerHTML = '<div class="text-center p-8 text-gray-500">✨ لا توجد منشورات بعد - كن أول من ينشر! ✨</div>';
+        feedContainer.innerHTML = '<div class="text-center p-10 opacity-60">✨ لا توجد منشورات بعد - كن أول من ينشر! ✨</div>';
         hasMorePosts = false;
         return;
     }
@@ -1000,7 +1015,7 @@ async function displayPosts(startIndex, count) {
         let pollHtml = '';
         if (post.poll && post.poll.question) {
             pollHtml = '<div class="poll-container">';
-            pollHtml += `<div style="font-weight: 600; margin-bottom: 8px;">📊 ${escapeHtml(post.poll.question)}</div>`;
+            pollHtml += `<div style="font-weight: 700; margin-bottom: 12px;">📊 ${escapeHtml(post.poll.question)}</div>`;
             for (let i = 0; i < post.poll.options.length; i++) {
                 const voteCount = post.poll.votes ? Object.values(post.poll.votes).filter(v => v === i).length : 0;
                 const percentage = post.poll.totalVotes > 0 ? (voteCount / post.poll.totalVotes * 100).toFixed(1) : 0;
@@ -1014,7 +1029,7 @@ async function displayPosts(startIndex, count) {
                     </div>
                 `;
             }
-            pollHtml += `<div style="font-size: 11px; color: #9ca3af; margin-top: 8px;">${post.poll.totalVotes || 0} صوت</div>`;
+            pollHtml += `<div style="font-size: 12px; opacity: 0.6; margin-top: 10px;">${post.poll.totalVotes || 0} شخص صوتوا</div>`;
             pollHtml += '</div>';
         }
         
@@ -1022,8 +1037,8 @@ async function displayPosts(startIndex, count) {
         if (post.quote) {
             quoteHtml = `
                 <div class="quote-post" onclick="openComments('${post.quote.originalPostId}')">
-                    <div style="font-weight: 600;">@${escapeHtml(post.quote.originalUser)}</div>
-                    <div style="font-size: 13px;">${escapeHtml(post.quote.originalText?.substring(0, 100))}</div>
+                    <div style="font-weight: 700;">@${escapeHtml(post.quote.originalUser)}</div>
+                    <div style="font-size: 13px; opacity: 0.7;">${escapeHtml(post.quote.originalText?.substring(0, 100))}</div>
                 </div>
             `;
         }
@@ -1048,14 +1063,14 @@ async function displayPosts(startIndex, count) {
         
         const postHtml = `
             <div class="post-card ${isPinned ? 'pinned' : ''} fade-in" data-post-id="${post.id}" ondblclick="likePost('${post.id}'); createHeartAnimation(event.clientX, event.clientY)">
-                ${isPinned ? '<div class="pinned-badge"><i class="fa-solid fa-thumbtack"></i> مثبت</div>' : ''}
+                ${isPinned ? '<div class="pinned-badge"><i class="fa-solid fa-thumbtack"></i> منشور مثبت</div>' : ''}
                 <div class="post-header">
                     <div class="post-user-info" onclick="openProfile('${post.userId}')">
                         <div class="post-avatar">${post.userAvatar ? `<img src="${post.userAvatar}">` : '<i class="fa-solid fa-user text-white text-xl flex items-center justify-center h-full"></i>'}</div>
                         <div>
                             <div class="post-username">
                                 ${escapeHtml(post.userName)}
-                                ${isUserVerified ? '<i class="fa-solid fa-circle-check verified-badge" style="color: #f59e0b; font-size: 14px;"></i>' : ''}
+                                ${isUserVerified ? '<i class="fa-solid fa-circle-check verified-badge"></i>' : ''}
                             </div>
                             <div class="post-time">${formatTime(post.timestamp)} ${post.edited ? '· معدل' : ''}</div>
                         </div>
@@ -1072,8 +1087,8 @@ async function displayPosts(startIndex, count) {
                 ${pollHtml}
                 ${quoteHtml}
                 <div class="post-actions">
-                    <button class="post-action ${isLiked ? 'active' : ''}" onclick="likePost('${post.id}')"><i class="fa-regular fa-heart"></i></button>
-                    <button class="post-action" onclick="openComments('${post.id}')"><i class="fa-regular fa-comment"></i></button>
+                    <button class="post-action ${isLiked ? 'active' : ''}" onclick="likePost('${post.id}')"><i class="fa-regular fa-heart"></i> <span>${likesCount > 0 && !hideLikesActive ? likesCount : ''}</span></button>
+                    <button class="post-action" onclick="openComments('${post.id}')"><i class="fa-regular fa-comment"></i> <span>${post.commentsCount || 0}</span></button>
                     <button class="post-action" onclick="sharePost('${post.id}')"><i class="fa-regular fa-paper-plane"></i></button>
                 </div>
                 ${likesCount > 0 && !hideLikesActive ? `<div class="post-likes">🧡 ${likesCount} إعجاب</div>` : ''}
@@ -1092,7 +1107,7 @@ async function displayPosts(startIndex, count) {
             loadMoreDiv = document.createElement('div');
             loadMoreDiv.id = 'loadMoreTrigger';
             loadMoreDiv.className = 'load-more-btn';
-            loadMoreDiv.innerHTML = '<div class="spinner" style="width: 24px; height: 24px;"></div><span>جاري تحميل المزيد...</span>';
+            loadMoreDiv.innerHTML = '<div class="spinner" style="width: 28px; height: 28px;"></div><span>جاري تحميل المزيد...</span>';
             loadMoreDiv.style.display = 'none';
             feedContainer.appendChild(loadMoreDiv);
         }
@@ -1100,8 +1115,8 @@ async function displayPosts(startIndex, count) {
         const loadMoreDiv = document.getElementById('loadMoreTrigger');
         if (loadMoreDiv) loadMoreDiv.remove();
         const endMessage = document.createElement('div');
-        endMessage.className = 'text-center p-4 text-gray-500';
-        endMessage.innerHTML = '✨ لقد وصلت إلى نهاية LUME ✨';
+        endMessage.className = 'text-center p-6 opacity-60';
+        endMessage.innerHTML = '✨ لقد وصلت إلى نهاية LUME - عد لاحقاً لمشاهدة منشورات جديدة ✨';
         feedContainer.appendChild(endMessage);
     }
 }
@@ -1113,7 +1128,7 @@ async function loadMorePosts() {
     const loadMoreDiv = document.getElementById('loadMoreTrigger');
     if (loadMoreDiv) loadMoreDiv.style.display = 'flex';
     
-    await new Promise(resolve => setTimeout(resolve, 200));
+    await new Promise(resolve => setTimeout(resolve, 300));
     
     const startIndex = currentDisplayCount;
     const newEndIndex = Math.min(startIndex + POSTS_PER_PAGE, allPostsCache.length);
@@ -1135,7 +1150,7 @@ function setupScrollListener() {
         if (isLoadingPosts || !hasMorePosts) return;
         
         const scrollPosition = window.innerHeight + window.scrollY;
-        const threshold = document.body.offsetHeight - 400;
+        const threshold = document.body.offsetHeight - 500;
         
         if (scrollPosition >= threshold) {
             loadMorePosts();
@@ -1158,7 +1173,7 @@ async function refreshFeedCache() {
         currentDisplayCount = 0;
         const feedContainer = document.getElementById('feedContainer');
         if (feedContainer) {
-            feedContainer.innerHTML = '<div class="text-center p-8 text-gray-500">✨ لا توجد منشورات بعد - كن أول من ينشر! ✨</div>';
+            feedContainer.innerHTML = '<div class="text-center p-10 opacity-60">✨ لا توجد منشورات بعد - كن أول من ينشر! ✨</div>';
         }
         return;
     }
@@ -1238,10 +1253,10 @@ async function searchAll() {
     }
     let html = '';
     for (const result of results) {
-        if (result.type === 'user') html += `<div class="follower-item" onclick="closeSearch(); openProfile('${result.data.uid}')"><div class="post-avatar" style="width: 44px; height: 44px;">${result.data.avatar ? `<img src="${result.data.avatar}">` : '<i class="fa-solid fa-user text-white text-xl flex items-center justify-center h-full"></i>'}</div><div><div style="font-weight: 600;">${escapeHtml(result.data.name)}</div><div style="font-size: 12px; color: #9ca3af;">${escapeHtml(result.data.email)}</div></div></div>`;
-        else if (result.type === 'hashtag') html += `<div class="follower-item" onclick="closeSearch(); searchHashtag('${result.data.tag}')"><div class="post-avatar" style="width: 44px; height: 44px; background: linear-gradient(135deg, #f59e0b, #ea580c); display: flex; align-items: center; justify-content: center;"><i class="fa-solid fa-hashtag text-white text-xl"></i></div><div><div style="font-weight: 600; color: #f59e0b;">#${escapeHtml(result.data.tag)}</div><div style="font-size: 12px; color: #9ca3af;">${result.data.count} منشور</div></div></div>`;
+        if (result.type === 'user') html += `<div class="follower-item" onclick="closeSearch(); openProfile('${result.data.uid}')"><div class="post-avatar" style="width: 48px; height: 48px;">${result.data.avatar ? `<img src="${result.data.avatar}">` : '<i class="fa-solid fa-user text-white text-xl flex items-center justify-center h-full"></i>'}</div><div><div style="font-weight: 700;">${escapeHtml(result.data.name)}</div><div style="font-size: 12px; opacity: 0.6;">${escapeHtml(result.data.email)}</div></div></div>`;
+        else if (result.type === 'hashtag') html += `<div class="follower-item" onclick="closeSearch(); searchHashtag('${result.data.tag}')"><div class="post-avatar" style="width: 48px; height: 48px; background: linear-gradient(135deg, #f59e0b, #ea580c); display: flex; align-items: center; justify-content: center;"><i class="fa-solid fa-hashtag text-white text-2xl"></i></div><div><div style="font-weight: 700; color: #f59e0b;">#${escapeHtml(result.data.tag)}</div><div style="font-size: 12px; opacity: 0.6;">${result.data.count} منشور</div></div></div>`;
     }
-    document.getElementById('searchResults').innerHTML = html || '<div class="text-center p-4 text-gray-500">🔍 لا توجد نتائج</div>';
+    document.getElementById('searchResults').innerHTML = html || '<div class="text-center p-6 opacity-60">🔍 لا توجد نتائج مطابقة</div>';
 }
 
 // ==================== Comments ====================
@@ -1259,7 +1274,7 @@ async function loadComments(postId) {
     const pinnedCommentId = await db.ref(`posts/${postId}/pinnedComment`).once('value');
     const pinnedId = pinnedCommentId.val();
     if (!comments) {
-        commentsList.innerHTML = '<div class="text-center p-4 text-gray-500">💬 لا توجد تعليقات</div>';
+        commentsList.innerHTML = '<div class="text-center p-6 opacity-60">💬 لا توجد تعليقات - كن أول من يعلق!</div>';
         return;
     }
     let commentsArray = Object.entries(comments).map(([id, comment]) => ({ id, ...comment }));
@@ -1277,7 +1292,7 @@ async function loadComments(postId) {
         const userData = userSnapshot.val();
         const isCommentOwner = comment.userId === currentUser?.uid;
         const isVerified = userData?.verified || false;
-        html += `<div class="chat-message"><div class="message-bubble"><div style="display: flex; align-items: center; gap: 8px; margin-bottom: 4px;"><span style="font-weight: 600; cursor: pointer; display: flex; align-items: center; gap: 4px;" onclick="closeComments(); openProfile('${comment.userId}')">${escapeHtml(userData?.name || 'مستخدم')}${isVerified ? '<i class="fa-solid fa-circle-check" style="color: #f59e0b; font-size: 12px;"></i>' : ''}</span><span style="font-size: 10px; color: #9ca3af;">${formatTime(comment.timestamp)}</span>${comment.id === pinnedId ? '<span style="background: linear-gradient(135deg, #f59e0b, #ea580c); color: white; padding: 2px 6px; border-radius: 12px; font-size: 9px;">📌 مثبت</span>' : ''}${isCommentOwner ? `<button class="post-menu" onclick="pinComment('${postId}', '${comment.id}')" style="margin-right: auto;"><i class="fa-solid fa-thumbtack"></i></button>` : ''}</div><div>${escapeHtml(filterBadWords(comment.text))}</div></div></div>`;
+        html += `<div class="chat-message"><div class="message-bubble"><div style="display: flex; align-items: center; gap: 10px; margin-bottom: 6px;"><span style="font-weight: 700; cursor: pointer; display: flex; align-items: center; gap: 6px;" onclick="closeComments(); openProfile('${comment.userId}')">${escapeHtml(userData?.name || 'مستخدم')}${isVerified ? '<i class="fa-solid fa-circle-check" style="color: #f59e0b; font-size: 12px;"></i>' : ''}</span><span style="font-size: 10px; opacity: 0.6;">${formatTime(comment.timestamp)}</span>${comment.id === pinnedId ? '<span style="background: linear-gradient(135deg, #f59e0b, #ea580c); color: white; padding: 2px 8px; border-radius: 30px; font-size: 9px;">📌 مثبت</span>' : ''}${isCommentOwner ? `<button class="post-menu" onclick="pinComment('${postId}', '${comment.id}')" style="margin-right: auto;"><i class="fa-solid fa-thumbtack"></i></button>` : ''}</div><div>${escapeHtml(filterBadWords(comment.text))}</div></div></div>`;
     }
     commentsList.innerHTML = html;
 }
@@ -1287,7 +1302,7 @@ async function addComment() {
     if (!text || !currentPostId) return;
     if (containsBadWords(text)) return showToast('⚠️ التعليق يحتوي على كلمات ممنوعة');
     text = filterBadWords(text);
-    if (await isUserMuted(currentUser.uid)) return showToast('⚠️ أنت مقيد مؤقتاً ولا يمكنك التعليق');
+    if (await isUserMuted(currentUser.uid)) return showToast('⚠️ أنت مقيد مؤقتاً ولا يمكنك التعليق حالياً');
     const commentRef = db.ref(`comments/${currentPostId}`).push();
     await commentRef.set({ userId: currentUser.uid, userName: currentUser.displayName || currentUser.name, text: text, timestamp: Date.now() });
     const postRef = db.ref(`posts/${currentPostId}`);
@@ -1306,7 +1321,7 @@ async function addComment() {
     document.getElementById('commentInput').value = '';
     await loadComments(currentPostId);
     refreshFeedCache();
-    showToast('💬 تم إضافة التعليق');
+    showToast('💬 تم إضافة تعليقك بنجاح');
 }
 
 // ==================== Profile ====================
@@ -1331,11 +1346,11 @@ async function openProfile(userId) {
         }
     }
     const profileAvatarLarge = document.getElementById('profileAvatarLarge');
-    profileAvatarLarge.innerHTML = userData.avatar ? `<img src="${userData.avatar}" style="width:100%;height:100%;object-fit:cover">` : '<i class="fa-solid fa-user text-5xl text-white flex items-center justify-center h-full"></i>';
-    document.getElementById('profileName').innerHTML = `${escapeHtml(userData.name)} ${userData.verified ? '<i class="fa-solid fa-circle-check verified-badge" style="color: #f59e0b; font-size: 20px;"></i>' : ''}`;
+    profileAvatarLarge.innerHTML = userData.avatar ? `<img src="${userData.avatar}" style="width:100%;height:100%;object-fit:cover">` : '<i class="fa-solid fa-user text-6xl text-white flex items-center justify-center h-full"></i>';
+    document.getElementById('profileName').innerHTML = `${escapeHtml(userData.name)} ${userData.verified ? '<i class="fa-solid fa-circle-check verified-badge" style="font-size: 22px;"></i>' : ''}`;
     document.getElementById('profileBio').textContent = userData.bio || "مرحباً! أنا في LUME 🌟";
     const websiteEl = document.getElementById('profileWebsite');
-    if (userData.website) websiteEl.innerHTML = `<a href="${userData.website}" target="_blank" style="color: #f59e0b;">${userData.website}</a>`;
+    if (userData.website) websiteEl.innerHTML = `<a href="${userData.website}" target="_blank" style="color: #f59e0b; text-decoration: none;">🔗 ${userData.website}</a>`;
     else websiteEl.innerHTML = '';
     const followersSnapshot = await db.ref(`followers/${userId}`).once('value');
     const followingSnapshot = await db.ref(`following/${userId}`).once('value');
@@ -1375,7 +1390,7 @@ async function toggleFollow(userId) {
     } else {
         await db.ref(`followers/${userId}/${currentUser.uid}`).set({ uid: currentUser.uid, name: currentUser.displayName || currentUser.name, timestamp: Date.now() });
         await db.ref(`following/${currentUser.uid}/${userId}`).set({ uid: userId, timestamp: Date.now() });
-        showToast('✅ تم المتابعة');
+        showToast('✅ تم المتابعة - ستظهر منشوراتهم في صفحتك الرئيسية');
         const dndSnapshot = await db.ref(`users/${userId}/dnd`).once('value');
         if (!dndSnapshot.val()) {
             await db.ref(`notifications/${userId}`).push({ type: 'follow', userId: currentUser.uid, userName: currentUser.displayName || currentUser.name, timestamp: Date.now(), read: false });
@@ -1391,12 +1406,12 @@ async function loadProfilePosts(userId) {
     const grid = document.getElementById('profilePostsGrid');
     if (!grid) return;
     if (userPosts.length === 0) {
-        grid.innerHTML = '<div class="text-center p-8 text-gray-500" style="grid-column: span 3;">📭 لا توجد منشورات</div>';
+        grid.innerHTML = '<div class="text-center p-10 opacity-60" style="grid-column: span 3;">📭 لا توجد منشورات بعد</div>';
         return;
     }
     let html = '';
     for (const post of userPosts) {
-        html += `<div class="grid-item" onclick="openComments('${post.id}')">${post.mediaUrl ? (post.mediaType === 'image' ? `<img src="${post.mediaUrl}">` : `<video src="${post.mediaUrl}"></video>`) : '<div class="flex items-center justify-center h-full bg-gray-100 dark:bg-gray-800"><i class="fa-regular fa-file-lines text-2xl text-gray-500"></i></div>'}<div class="grid-item-overlay"><span><i class="fa-regular fa-heart"></i> ${post.likes ? Object.keys(post.likes).length : 0}</span><span><i class="fa-regular fa-comment"></i> ${post.commentsCount || 0}</span></div></div>`;
+        html += `<div class="grid-item" onclick="openComments('${post.id}')">${post.mediaUrl ? (post.mediaType === 'image' ? `<img src="${post.mediaUrl}">` : `<video src="${post.mediaUrl}"></video>`) : '<div style="background: rgba(255,255,255,0.03); height: 100%; display: flex; align-items: center; justify-content: center;"><i class="fa-regular fa-file-lines text-3xl opacity-40"></i></div>'}<div class="grid-item-overlay"><span><i class="fa-regular fa-heart"></i> ${post.likes ? Object.keys(post.likes).length : 0}</span><span><i class="fa-regular fa-comment"></i> ${post.commentsCount || 0}</span></div></div>`;
     }
     grid.innerHTML = html;
 }
@@ -1408,7 +1423,7 @@ async function loadProfileMedia(userId) {
     const grid = document.getElementById('profilePostsGrid');
     if (!grid) return;
     if (userPosts.length === 0) {
-        grid.innerHTML = '<div class="text-center p-8 text-gray-500" style="grid-column: span 3;">🎬 لا توجد وسائط</div>';
+        grid.innerHTML = '<div class="text-center p-10 opacity-60" style="grid-column: span 3;">🎬 لا توجد وسائط بعد</div>';
         return;
     }
     let html = '';
@@ -1441,7 +1456,7 @@ async function saveProfileEdit() {
     currentUser.displayName = newName || currentUser.displayName;
     closeEditProfileModal();
     openProfile(currentUser.uid);
-    showToast('💾 تم حفظ التغييرات');
+    showToast('💾 تم حفظ التغييرات بنجاح');
 }
 
 // ==================== Chat ====================
@@ -1455,7 +1470,7 @@ async function openChat(userId) {
     const lastSeen = lastSeenSnapshot.val();
     const lastSeenEl = document.getElementById('chatLastSeen');
     if (lastSeen) lastSeenEl.textContent = `🕒 آخر ظهور ${formatTime(lastSeen)}`;
-    else lastSeenEl.textContent = '';
+    else lastSeenEl.textContent = '🟢 متصل الآن';
     const chatId = getChatId(currentUser.uid, userId);
     listenForTyping(chatId);
     await loadChatMessages(userId);
@@ -1470,7 +1485,7 @@ async function loadChatMessages(userId) {
         const container = document.getElementById('chatMessages');
         if (!container) return;
         if (!messages) {
-            container.innerHTML = '<div class="text-center p-4 text-gray-500">💬 لا توجد رسائل بعد</div>';
+            container.innerHTML = '<div class="text-center p-6 opacity-60">💬 لا توجد رسائل بعد - ابدأ المحادثة!</div>';
             return;
         }
         let html = '';
@@ -1478,7 +1493,7 @@ async function loadChatMessages(userId) {
         for (const msg of messagesArray) {
             const isSent = msg.senderId === currentUser.uid;
             const isRead = msg.read;
-            html += `<div class="chat-message ${isSent ? 'sent' : ''}"><div class="message-bubble ${isSent ? 'sent' : ''}">${msg.text ? escapeHtml(msg.text) : ''}${msg.imageUrl ? `<img src="${msg.imageUrl}" class="message-image" style="max-width: 200px; border-radius: 12px; margin-top: 8px; cursor: pointer;" onclick="openImageViewer(['${msg.imageUrl}'], 0)">` : ''}${msg.audioUrl ? `<audio controls class="audio-player" style="margin-top: 8px; height: 36px;" src="${msg.audioUrl}"></audio>` : ''}</div>${isSent ? `<div class="message-status" style="font-size: 10px; color: #9ca3af; margin-top: 4px;"><i class="fa-solid fa-check${isRead ? '-double' : ''}"></i></div>` : ''}</div>`;
+            html += `<div class="chat-message ${isSent ? 'sent' : ''}"><div class="message-bubble ${isSent ? 'sent' : ''}">${msg.text ? escapeHtml(msg.text) : ''}${msg.imageUrl ? `<img src="${msg.imageUrl}" style="max-width: 200px; border-radius: 16px; margin-top: 10px; cursor: pointer;" onclick="openImageViewer(['${msg.imageUrl}'], 0)">` : ''}${msg.audioUrl ? `<audio controls style="margin-top: 10px; height: 40px;" src="${msg.audioUrl}"></audio>` : ''}</div>${isSent ? `<div style="font-size: 10px; opacity: 0.5; margin-top: 4px;"><i class="fa-solid fa-check${isRead ? '-double' : ''}"></i></div>` : ''}</div>`;
         }
         container.innerHTML = html;
         container.scrollTop = container.scrollHeight;
@@ -1512,7 +1527,7 @@ async function sendChatImage(input) {
         if (url) {
             const chatId = getChatId(currentUser.uid, currentChatUser.uid);
             await db.ref(`chats/${chatId}`).push({ senderId: currentUser.uid, imageUrl: url, timestamp: Date.now(), read: false });
-            showToast('✅ تم إرسال الصورة');
+            showToast('✅ تم إرسال الصورة بنجاح');
         }
     }
     input.value = '';
@@ -1525,7 +1540,7 @@ async function openConversations() {
     const snapshot = await db.ref('chats').once('value');
     const chats = snapshot.val();
     if (!chats) {
-        conversationsList.innerHTML = '<div class="text-center p-4 text-gray-500">💬 لا توجد محادثات</div>';
+        conversationsList.innerHTML = '<div class="text-center p-6 opacity-60">💬 لا توجد محادثات بعد</div>';
         document.getElementById('conversationsPanel')?.classList.add('open');
         return;
     }
@@ -1546,7 +1561,7 @@ async function openConversations() {
         const messagesSnapshot = await db.ref(`chats/${getChatId(currentUser.uid, conv.userId)}`).once('value');
         const messages = messagesSnapshot.val();
         if (messages) unreadCount = Object.values(messages).filter(m => !m.read && m.senderId !== currentUser.uid).length;
-        html += `<div class="follower-item" onclick="closeConversations(); openChat('${conv.userId}')"><div class="post-avatar" style="width: 48px; height: 48px;">${conv.userData?.avatar ? `<img src="${conv.userData.avatar}">` : '<i class="fa-solid fa-user text-white text-xl flex items-center justify-center h-full"></i>'}</div><div style="flex: 1;"><div style="font-weight: 600;">${escapeHtml(conv.userData?.name || 'مستخدم')}</div><div style="font-size: 12px; color: #9ca3af;">${conv.lastMessage.text ? conv.lastMessage.text.substring(0, 30) : (conv.lastMessage.audioUrl ? '🎤 رسالة صوتية' : (conv.lastMessage.imageUrl ? '🖼️ صورة' : ''))}</div></div>${unreadCount > 0 ? `<div style="background: linear-gradient(135deg, #f59e0b, #ea580c); color: white; border-radius: 50%; width: 20px; height: 20px; display: flex; align-items: center; justify-content: center; font-size: 10px;">${unreadCount}</div>` : ''}</div>`;
+        html += `<div class="follower-item" onclick="closeConversations(); openChat('${conv.userId}')"><div class="post-avatar" style="width: 52px; height: 52px;">${conv.userData?.avatar ? `<img src="${conv.userData.avatar}">` : '<i class="fa-solid fa-user text-white text-xl flex items-center justify-center h-full"></i>'}</div><div style="flex: 1;"><div style="font-weight: 700;">${escapeHtml(conv.userData?.name || 'مستخدم')}</div><div style="font-size: 12px; opacity: 0.6;">${conv.lastMessage.text ? conv.lastMessage.text.substring(0, 35) : (conv.lastMessage.audioUrl ? '🎤 رسالة صوتية' : (conv.lastMessage.imageUrl ? '🖼️ صورة' : ''))}</div></div>${unreadCount > 0 ? `<div style="background: linear-gradient(135deg, #f59e0b, #ea580c); color: white; border-radius: 50%; width: 24px; height: 24px; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 700;">${unreadCount}</div>` : ''}</div>`;
     }
     conversationsList.innerHTML = html;
     document.getElementById('conversationsPanel')?.classList.add('open');
@@ -1564,7 +1579,7 @@ async function loadNotifications() {
         if (notifications) {
             const unread = Object.values(notifications).filter(n => !n.read).length;
             if (unread > 0) {
-                if (!existingBadge) parent.innerHTML = '<i class="fa-regular fa-bell"></i><div class="notification-badge" style="position: absolute; top: -6px; right: -10px; background: #ef4444; color: white; font-size: 9px; border-radius: 50%; width: 16px; height: 16px; display: flex; align-items: center; justify-content: center;">' + unread + '</div>';
+                if (!existingBadge) parent.innerHTML = '<i class="fa-regular fa-bell"></i><div class="notification-badge" style="position: absolute; top: -6px; right: -10px; background: #ef4444; color: white; font-size: 10px; border-radius: 50%; width: 18px; height: 18px; display: flex; align-items: center; justify-content: center;">' + unread + '</div>';
                 else existingBadge.textContent = unread;
             } else if (existingBadge) parent.innerHTML = '<i class="fa-regular fa-bell"></i>';
         } else if (existingBadge) parent.innerHTML = '<i class="fa-regular fa-bell"></i>';
@@ -1576,14 +1591,14 @@ async function openNotifications() {
     const notifications = snapshot.val();
     const container = document.getElementById('notificationsList');
     if (!notifications) {
-        container.innerHTML = '<div class="text-center p-4 text-gray-500">🔔 لا توجد إشعارات</div>';
+        container.innerHTML = '<div class="text-center p-6 opacity-60">🔔 لا توجد إشعارات</div>';
         document.getElementById('notificationsPanel')?.classList.add('open');
         return;
     }
     let html = '';
     const sorted = Object.entries(notifications).sort((a, b) => b[1].timestamp - a[1].timestamp);
     for (const [id, notif] of sorted) {
-        html += `<div class="follower-item" onclick="markNotificationRead('${id}'); ${notif.type === 'like' ? `openComments('${notif.postId}')` : notif.type === 'comment' ? `openComments('${notif.postId}')` : notif.type === 'call' ? `startVideoCallWithUser('${notif.userId}')` : `openProfile('${notif.userId}')`}"><div class="post-avatar" style="width: 44px; height: 44px; background: linear-gradient(135deg, #f59e0b, #ea580c);"><i class="fa-solid ${notif.type === 'like' ? 'fa-heart' : notif.type === 'comment' ? 'fa-comment' : notif.type === 'call' ? 'fa-video' : 'fa-user-plus'} text-white text-xl flex items-center justify-center h-full"></i></div><div style="flex: 1;"><div><span style="font-weight: 600;">${escapeHtml(notif.userName)}</span> ${notif.type === 'like' ? '🧡 أعجب بمنشورك' : notif.type === 'comment' ? `💬 علق على منشورك: ${notif.text?.substring(0, 50)}` : notif.type === 'call' ? '📹 أجرى مكالمة فيديو معك' : '➕ بدأ بمتابعتك'}</div><div style="font-size: 11px; color: #9ca3af;">${formatTime(notif.timestamp)}</div></div></div>`;
+        html += `<div class="follower-item" onclick="markNotificationRead('${id}'); ${notif.type === 'like' ? `openComments('${notif.postId}')` : notif.type === 'comment' ? `openComments('${notif.postId}')` : notif.type === 'call' ? `startVideoCallWithUser('${notif.userId}')` : `openProfile('${notif.userId}')`}"><div class="post-avatar" style="width: 48px; height: 48px; background: linear-gradient(135deg, #f59e0b, #ea580c); display: flex; align-items: center; justify-content: center;"><i class="fa-solid ${notif.type === 'like' ? 'fa-heart' : notif.type === 'comment' ? 'fa-comment' : notif.type === 'call' ? 'fa-video' : 'fa-user-plus'} text-white text-xl"></i></div><div style="flex: 1;"><div><span style="font-weight: 700;">${escapeHtml(notif.userName)}</span> ${notif.type === 'like' ? '🧡 أعجب بمنشورك' : notif.type === 'comment' ? `💬 علق على منشورك: "${notif.text?.substring(0, 50)}"` : notif.type === 'call' ? '📹 أجرى مكالمة فيديو معك' : '➕ بدأ بمتابعتك'}</div><div style="font-size: 11px; opacity: 0.6;">${formatTime(notif.timestamp)}</div></div></div>`;
     }
     container.innerHTML = html;
     document.getElementById('notificationsPanel')?.classList.add('open');
@@ -1600,7 +1615,7 @@ async function markNotificationRead(notifId) {
 
 // ==================== Admin Panel ====================
 async function openAdminPanel() {
-    if (currentUser.email !== ADMIN_EMAIL && !currentUser.isAdmin) return showToast('🚫 غير مصرح لك بالدخول إلى لوحة التحكم');
+    if (currentUser.email !== ADMIN_EMAIL && !currentUser.isAdmin) return showToast('🚫 غير مصرح لك بالدخول إلى لوحة التحكم - هذه الصفحة للمدير فقط');
     showToast('🔧 جاري تحميل لوحة التحكم...');
     
     const badWordsSnapshot = await db.ref('badWords').once('value');
@@ -1608,9 +1623,9 @@ async function openAdminPanel() {
     const badWordsContainer = document.getElementById('adminBadWordsList');
     if (badWordsContainer) {
         if (!badWords) {
-            badWordsContainer.innerHTML = '<div class="text-center p-4 text-gray-500">📝 لا توجد كلمات ممنوعة - أضف كلمات جديدة</div>';
+            badWordsContainer.innerHTML = '<div class="text-center p-4 opacity-60">📝 لا توجد كلمات ممنوعة - أضف كلمات جديدة للحفاظ على المجتمع</div>';
         } else {
-            let html = '<div style="max-height: 300px; overflow-y: auto;">';
+            let html = '<div style="max-height: 250px; overflow-y: auto;">';
             for (const [id, word] of Object.entries(badWords)) {
                 html += `<div class="admin-item">
                     <div><span style="font-weight: 600;">🚫 ${escapeHtml(word)}</span></div>
@@ -1638,25 +1653,25 @@ async function openAdminPanel() {
         for (const [uid, user] of Object.entries(usersSnapshot.val())) {
             if (uid !== currentUser.uid) {
                 const isMuted = await isUserMuted(uid);
-                usersHtml += `<div class="admin-item"><div><div class="admin-item-name" style="font-weight: 600;">${escapeHtml(user.name)}</div><div class="admin-item-email" style="font-size: 12px; color: #9ca3af;">${escapeHtml(user.email)}</div></div><div>${!user.verified ? `<button class="admin-verify-btn" onclick="verifyUser('${uid}')">✅ توثيق</button>` : '<span style="color: #10b981; font-size: 12px;">✅ موثق</span>'}<button class="admin-mute-btn" onclick="muteUser('${uid}', 60)">🔇 تقييد</button><button class="admin-delete-btn" onclick="deleteUser('${uid}')">🗑️ حذف</button></div></div>`;
+                usersHtml += `<div class="admin-item"><div><div style="font-weight: 700;">${escapeHtml(user.name)}</div><div style="font-size: 12px; opacity: 0.6;">${escapeHtml(user.email)}</div></div><div>${!user.verified ? `<button class="admin-verify-btn" onclick="verifyUser('${uid}')">✅ توثيق</button>` : '<span style="color: #10b981; font-size: 12px;">✅ موثق ✓</span>'}<button class="admin-mute-btn" onclick="muteUser('${uid}', 60)">🔇 ${isMuted ? 'إلغاء التقييد' : 'تقييد'}</button><button class="admin-delete-btn" onclick="deleteUser('${uid}')">🗑️ حذف</button></div></div>`;
             }
         }
     }
-    document.getElementById('adminUsersList').innerHTML = usersHtml || '<div class="text-center p-4 text-gray-500">👥 لا يوجد مستخدمين</div>';
+    document.getElementById('adminUsersList').innerHTML = usersHtml || '<div class="text-center p-4 opacity-60">👥 لا يوجد مستخدمين آخرين</div>';
     
     let postsHtml = '';
     if (postsSnapshot.exists()) {
         for (const post of Object.values(postsSnapshot.val()).sort((a, b) => b.timestamp - a.timestamp).slice(0, 20)) {
-            postsHtml += `<div class="admin-item"><div><div class="admin-item-name" style="font-weight: 600;">${escapeHtml(post.userName)}</div><div class="admin-item-email" style="font-size: 12px; color: #9ca3af;">${escapeHtml(post.text?.substring(0, 50) || '')}</div></div><button class="admin-delete-btn" onclick="deletePost('${post.id}')">🗑️ حذف</button></div>`;
+            postsHtml += `<div class="admin-item"><div><div style="font-weight: 700;">${escapeHtml(post.userName)}</div><div style="font-size: 12px; opacity: 0.6;">${escapeHtml(post.text?.substring(0, 60) || '')}</div></div><button class="admin-delete-btn" onclick="deletePost('${post.id}')">🗑️ حذف</button></div>`;
         }
     }
-    document.getElementById('adminPostsList').innerHTML = postsHtml || '<div class="text-center p-4 text-gray-500">📭 لا توجد منشورات</div>';
+    document.getElementById('adminPostsList').innerHTML = postsHtml || '<div class="text-center p-4 opacity-60">📭 لا توجد منشورات</div>';
     document.getElementById('adminPanel').classList.add('open');
 }
 
 async function verifyUser(userId) {
     await db.ref(`users/${userId}`).update({ verified: true });
-    showToast('✅ تم توثيق المستخدم بنجاح');
+    showToast('✅ تم توثيق المستخدم بنجاح - علامة توثيق ذهبية تظهر بجانب اسمه');
     if (currentUser && currentUser.uid === userId) {
         currentUser.verified = true;
         const userSnapshot = await db.ref(`users/${userId}`).once('value');
@@ -1669,9 +1684,9 @@ async function verifyUser(userId) {
 }
 
 async function deleteUser(userId) {
-    if (confirm('⚠️ هل أنت متأكد من حذف هذا المستخدم نهائياً؟')) {
+    if (confirm('⚠️ هل أنت متأكد من حذف هذا المستخدم نهائياً؟ لا يمكن التراجع عن هذا الإجراء')) {
         await db.ref(`users/${userId}`).remove();
-        showToast('🗑️ تم حذف المستخدم');
+        showToast('🗑️ تم حذف المستخدم نهائياً من المنصة');
         openAdminPanel();
         refreshFeedCache();
     }
@@ -1689,7 +1704,7 @@ async function openFollowersList(type) {
     const data = snapshot.val();
     const container = document.getElementById('followersList');
     if (!data) {
-        container.innerHTML = '<div class="text-center p-4 text-gray-500">👥 لا يوجد ' + (type === 'followers' ? 'متابعون' : 'متابَعون') + '</div>';
+        container.innerHTML = '<div class="text-center p-6 opacity-60">👥 لا يوجد ' + (type === 'followers' ? 'متابعون' : 'متابَعون') + '</div>';
         document.getElementById('followersPanel')?.classList.add('open');
         return;
     }
@@ -1697,7 +1712,7 @@ async function openFollowersList(type) {
     for (const [userId] of Object.entries(data)) {
         const userSnapshot = await db.ref(`users/${userId}`).once('value');
         const userData = userSnapshot.val();
-        html += `<div class="follower-item" onclick="closeFollowers(); openProfile('${userId}')"><div class="post-avatar" style="width: 48px; height: 48px;">${userData?.avatar ? `<img src="${userData.avatar}">` : '<i class="fa-solid fa-user text-white text-xl flex items-center justify-center h-full"></i>'}</div><div><div style="font-weight: 600;">${escapeHtml(userData?.name || 'مستخدم')}</div><div style="font-size: 12px; color: #9ca3af;">${escapeHtml(userData?.bio?.substring(0, 50) || '')}</div></div></div>`;
+        html += `<div class="follower-item" onclick="closeFollowers(); openProfile('${userId}')"><div class="post-avatar" style="width: 48px; height: 48px;">${userData?.avatar ? `<img src="${userData.avatar}">` : '<i class="fa-solid fa-user text-white text-xl flex items-center justify-center h-full"></i>'}</div><div><div style="font-weight: 700;">${escapeHtml(userData?.name || 'مستخدم')}</div><div style="font-size: 12px; opacity: 0.6;">${escapeHtml(userData?.bio?.substring(0, 50) || '')}</div></div></div>`;
     }
     container.innerHTML = html;
     document.getElementById('followersPanel')?.classList.add('open');
@@ -1709,7 +1724,7 @@ function closeFollowers() {
 
 // ==================== Stories (placeholder for future) ====================
 async function openStories() {
-    showToast('📸 القصص قريباً في LUME!');
+    showToast('📸 القصص قريباً في التحديث القادم من LUME!');
 }
 
 // ==================== Close Functions ====================
@@ -1788,8 +1803,8 @@ auth.onAuthStateChanged(async (user) => {
             initLoader.style.opacity = '0';
             setTimeout(() => {
                 if (initLoader) initLoader.style.display = 'none';
-            }, 300);
-        }, 500);
+            }, 400);
+        }, 800);
     }
     
     if (user) {
@@ -1816,7 +1831,7 @@ auth.onAuthStateChanged(async (user) => {
         document.getElementById('mainApp').style.display = 'block';
         
         const savedTheme = localStorage.getItem('theme');
-        if (savedTheme === 'dark') document.body.classList.add('dark-mode');
+        if (savedTheme === 'light') document.body.classList.add('light-mode');
         const savedReadMode = localStorage.getItem('readMode');
         if (savedReadMode === 'true') {
             readModeActive = true;
@@ -1836,9 +1851,14 @@ auth.onAuthStateChanged(async (user) => {
         loadTrendingHashtags();
         loadDndStatus();
         checkScheduledPosts();
+        
+        if (currentUser.isAdmin) {
+            console.log('👑 مرحباً أيها المدير - لوحة التحكم متاحة لك');
+        }
     } else {
         window.location.href = 'auth.html';
     }
 });
 
-console.log('✅ LUME Ultimate System Ready with Enhanced Upload Progress Bar');
+console.log('✅ LUME 2.0 - منصة اجتماعية متكاملة من عالم آخر');
+console.log('🌟 تم التحميل بنجاح - استمتع بتجربة فريدة');
