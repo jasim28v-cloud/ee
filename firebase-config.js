@@ -1,4 +1,4 @@
-// ==================== LUME - Firebase Configuration ====================
+// ==================== ZORAK - Firebase Configuration ====================
 const firebaseConfig = {
     apiKey: "AIzaSyD436FkIwy_e9tK5aW1DVPfUpeGZHeedUk",
     authDomain: "zorak-e0a51.firebaseapp.com",
@@ -9,16 +9,26 @@ const firebaseConfig = {
     measurementId: "G-NQVTB8RBKW"
 };
 
+// Initialize Firebase
 firebase.initializeApp(firebaseConfig);
 
+// Services
 const auth = firebase.auth();
 const db = firebase.database();
 const storage = firebase.storage();
 
+// Cloudinary
 const CLOUD_NAME = 'dnmpmysk6';
 const UPLOAD_PRESET = 'do_2gg';
-const AGORA_APP_ID = '4017f66ea15f4ce088e8d8993a072a5b';
-const ADMIN_EMAIL = 'jasim11v@gmail.com';
-const SITE_NAME = 'LUME';
 
-console.log('✅ LUME Ready');
+// Agora
+const AGORA_APP_ID = '4017f66ea15f4ce088e8d8993a072a5b';
+
+// Admin Account
+const ADMIN_EMAIL = 'jasim44v@gmail.com';
+const ADMIN_PASSWORD = 'ss2314ss';
+
+// Site Name
+const SITE_NAME = 'ZORAK';
+
+console.log('✅ ZORAK - Firebase, Cloudinary & Agora Ready');
