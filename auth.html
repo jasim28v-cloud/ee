@@ -2,8 +2,8 @@
 <html lang="ar" dir="rtl">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=yes">
-    <title>تسجيل الدخول | LUME</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LUME | تسجيل الدخول</title>
     <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.2/css/all.min.css">
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
@@ -11,186 +11,126 @@
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
-        
         body {
             font-family: 'Cairo', sans-serif;
-            background: radial-gradient(circle at 20% 50%, #f59e0b, #ea580c, #7c2d12);
+            background: radial-gradient(circle at 20% 50%, #667eea, #764ba2, #1a1a2e);
             min-height: 100vh;
             display: flex;
             align-items: center;
             justify-content: center;
             direction: rtl;
             padding: 20px;
-            position: relative;
-            overflow-x: hidden;
         }
-        
-        /* Animated background bubbles */
-        body::before {
-            content: '';
-            position: absolute;
-            width: 100%;
-            height: 100%;
-            background-image: radial-gradient(circle at 10% 20%, rgba(255,255,255,0.1) 1px, transparent 1px);
-            background-size: 40px 40px;
-            animation: float 20s linear infinite;
-        }
-        
-        @keyframes float {
-            0% { transform: translateY(0px); }
-            100% { transform: translateY(-40px); }
-        }
-        
         @keyframes fadeInUp {
-            from { opacity: 0; transform: translateY(30px) scale(0.95); }
-            to { opacity: 1; transform: translateY(0) scale(1); }
+            from { opacity: 0; transform: translateY(30px); }
+            to { opacity: 1; transform: translateY(0); }
         }
-        
-        @keyframes gradientShift {
-            0% { background-position: 0% 50%; }
-            50% { background-position: 100% 50%; }
-            100% { background-position: 0% 50%; }
-        }
-        
-        @keyframes glow {
-            0% { box-shadow: 0 0 5px rgba(245, 158, 11, 0.3); }
-            50% { box-shadow: 0 0 30px rgba(245, 158, 11, 0.6); }
-            100% { box-shadow: 0 0 5px rgba(245, 158, 11, 0.3); }
-        }
-        
         .auth-card {
-            background: rgba(255, 255, 255, 0.08);
+            background: rgba(255,255,255,0.08);
             backdrop-filter: blur(20px);
             border-radius: 48px;
             padding: 48px 40px;
             width: 100%;
             max-width: 460px;
             text-align: center;
-            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255,255,255,0.1);
-            border: 1px solid rgba(255, 255, 255, 0.2);
-            animation: fadeInUp 0.6s ease;
+            border: 1px solid rgba(255,255,255,0.2);
+            animation: fadeInUp 0.5s ease;
+            box-shadow: 0 25px 50px -12px rgba(0,0,0,0.3);
         }
-        
         .auth-card h1 {
-            font-size: 64px;
+            font-size: 56px;
             font-weight: 900;
             margin-bottom: 32px;
-            background: linear-gradient(135deg, #fff, #fbbf24, #f59e0b);
-            background-size: 200% 200%;
+            background: linear-gradient(135deg, #fff, #667eea, #764ba2);
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
-            animation: gradientShift 3s ease infinite;
-            letter-spacing: 4px;
         }
-        
         .auth-card input {
             width: 100%;
-            padding: 18px 22px;
+            padding: 16px 20px;
             margin: 12px 0;
             border-radius: 60px;
-            background: rgba(255, 255, 255, 0.1);
-            border: 1px solid rgba(255, 255, 255, 0.2);
+            background: rgba(255,255,255,0.1);
+            border: 1px solid rgba(255,255,255,0.2);
             font-size: 16px;
             font-family: 'Cairo', sans-serif;
-            transition: all 0.3s ease;
-            outline: none;
             color: white;
+            outline: none;
         }
-        
-        .auth-card input::placeholder {
-            color: rgba(255, 255, 255, 0.6);
-        }
-        
+        .auth-card input::placeholder { color: rgba(255,255,255,0.6); }
         .auth-card input:focus {
-            border-color: #f59e0b;
-            background: rgba(255, 255, 255, 0.15);
-            box-shadow: 0 0 20px rgba(245, 158, 11, 0.2);
+            border-color: #7c3aed;
+            background: rgba(255,255,255,0.15);
         }
-        
         .auth-card button {
             width: 100%;
-            padding: 16px;
-            margin-top: 24px;
-            background: linear-gradient(135deg, #f59e0b, #ea580c);
+            padding: 14px;
+            margin-top: 16px;
+            background: linear-gradient(135deg, #667eea, #764ba2);
             border: none;
             border-radius: 60px;
             color: white;
-            font-weight: 800;
-            font-size: 18px;
+            font-weight: 700;
+            font-size: 16px;
             cursor: pointer;
-            transition: all 0.3s ease;
-            position: relative;
-            overflow: hidden;
+            transition: transform 0.2s;
         }
-        
-        .auth-card button::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: -100%;
-            width: 100%;
-            height: 100%;
-            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent);
-            transition: left 0.5s;
+        .auth-card button:hover { transform: translateY(-2px); }
+        .google-btn {
+            background: rgba(255,255,255,0.9);
+            color: #333;
         }
-        
-        .auth-card button:hover::before {
-            left: 100%;
-        }
-        
-        .auth-card button:hover {
-            transform: translateY(-3px);
-            box-shadow: 0 15px 35px -10px rgba(245, 158, 11, 0.5);
-        }
-        
         .auth-tabs {
             display: flex;
-            gap: 12px;
-            margin-bottom: 36px;
-            background: rgba(255, 255, 255, 0.05);
+            gap: 10px;
+            margin-bottom: 30px;
+            background: rgba(255,255,255,0.1);
             border-radius: 80px;
-            padding: 6px;
+            padding: 5px;
         }
-        
         .auth-tab {
             flex: 1;
-            padding: 14px;
+            padding: 12px;
             background: none;
             border: none;
-            color: rgba(255, 255, 255, 0.7);
+            color: rgba(255,255,255,0.7);
             cursor: pointer;
             border-radius: 60px;
-            transition: all 0.3s;
-            font-size: 15px;
-            font-weight: 700;
+            font-weight: 600;
         }
-        
         .auth-tab.active {
-            background: linear-gradient(135deg, #f59e0b, #ea580c);
+            background: linear-gradient(135deg, #667eea, #764ba2);
             color: white;
-            box-shadow: 0 5px 20px rgba(245, 158, 11, 0.3);
         }
-        
-        .auth-form {
-            display: none;
+        .auth-form { display: none; }
+        .auth-form.active { display: block; animation: fadeInUp 0.3s; }
+        .error-msg { color: #fca5a5; font-size: 13px; margin-top: 12px; }
+        .divider {
+            display: flex;
+            align-items: center;
+            margin: 20px 0;
+            color: rgba(255,255,255,0.5);
+            font-size: 12px;
         }
-        
-        .auth-form.active {
-            display: block;
-            animation: fadeInUp 0.4s ease-out;
+        .divider::before, .divider::after {
+            content: '';
+            flex: 1;
+            height: 1px;
+            background: rgba(255,255,255,0.2);
         }
-        
-        .error-msg {
-            color: #fca5a5;
-            font-size: 13px;
-            margin-top: 14px;
-            text-align: center;
+        .divider::before { margin-left: 10px; }
+        .divider::after { margin-right: 10px; }
+        .forgot-password {
+            text-align: left;
+            font-size: 12px;
+            color: #a78bfa;
+            cursor: pointer;
+            margin-top: 5px;
         }
-        
         .loading {
             display: inline-block;
-            width: 20px;
-            height: 20px;
+            width: 18px;
+            height: 18px;
             border: 2px solid white;
             border-top-color: transparent;
             border-radius: 50%;
@@ -198,204 +138,167 @@
             margin-left: 8px;
             vertical-align: middle;
         }
-        
-        @keyframes spin {
-            to { transform: rotate(360deg); }
-        }
-        
-        .btn-loading {
-            opacity: 0.7;
-            cursor: not-allowed;
-        }
-        
-        .glass-icon {
-            font-size: 48px;
-            margin-bottom: 16px;
-            background: linear-gradient(135deg, #fbbf24, #f59e0b);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-        }
+        @keyframes spin { to { transform: rotate(360deg); } }
     </style>
 </head>
 <body>
-
 <div class="auth-card">
-    <div class="glass-icon">🌟</div>
-    <h1>LUME</h1>
+    <h1>✨ LUME ✨</h1>
     <div class="auth-tabs">
         <button class="auth-tab active" onclick="switchAuth('login')">تسجيل الدخول</button>
         <button class="auth-tab" onclick="switchAuth('register')">إنشاء حساب</button>
     </div>
-    
-    <!-- Login Form -->
     <div id="loginForm" class="auth-form active">
-        <input type="email" id="loginEmail" placeholder="📧 البريد الإلكتروني" autocomplete="email">
-        <input type="password" id="loginPassword" placeholder="🔒 كلمة المرور" autocomplete="current-password">
+        <input type="email" id="loginEmail" placeholder="البريد الإلكتروني">
+        <input type="password" id="loginPassword" placeholder="كلمة المرور">
+        <div class="forgot-password" onclick="sendResetPassword()">نسيت كلمة المرور؟</div>
         <button id="loginBtn">🚀 تسجيل الدخول</button>
+        <div class="divider">أو</div>
+        <button id="googleLoginBtn" class="google-btn"><i class="fab fa-google"></i> تسجيل الدخول بحساب جوجل</button>
         <div id="loginMsg" class="error-msg"></div>
     </div>
-    
-    <!-- Register Form -->
     <div id="registerForm" class="auth-form">
-        <input type="text" id="regName" placeholder="👤 اسم المستخدم" autocomplete="name">
-        <input type="email" id="regEmail" placeholder="📧 البريد الإلكتروني" autocomplete="email">
-        <input type="password" id="regPass" placeholder="🔒 كلمة المرور" autocomplete="new-password">
-        <input type="password" id="regConfirmPass" placeholder="🔒 تأكيد كلمة المرور" autocomplete="off">
+        <input type="text" id="regName" placeholder="اسم المستخدم">
+        <input type="email" id="regEmail" placeholder="البريد الإلكتروني">
+        <input type="password" id="regPass" placeholder="كلمة المرور">
+        <input type="password" id="regConfirmPass" placeholder="تأكيد كلمة المرور">
         <button id="registerBtn">✨ إنشاء حساب</button>
+        <div class="divider">أو</div>
+        <button id="googleRegisterBtn" class="google-btn"><i class="fab fa-google"></i> التسجيل بحساب جوجل</button>
         <div id="regMsg" class="error-msg"></div>
     </div>
 </div>
-
 <script src="firebase-config.js"></script>
 <script>
     function switchAuth(type) {
         document.querySelectorAll('.auth-tab').forEach(t => t.classList.remove('active'));
-        if (type === 'login') document.querySelectorAll('.auth-tab')[0].classList.add('active');
-        else document.querySelectorAll('.auth-tab')[1].classList.add('active');
-        
         document.querySelectorAll('.auth-form').forEach(f => f.classList.remove('active'));
-        document.getElementById(type + 'Form').classList.add('active');
-        clearErrors();
+        if (type === 'login') {
+            document.querySelectorAll('.auth-tab')[0].classList.add('active');
+            document.getElementById('loginForm').classList.add('active');
+        } else {
+            document.querySelectorAll('.auth-tab')[1].classList.add('active');
+            document.getElementById('registerForm').classList.add('active');
+        }
     }
-    
-    function clearErrors() {
-        document.getElementById('loginMsg').innerHTML = '';
-        document.getElementById('regMsg').innerHTML = '';
-    }
-    
     function showError(elementId, message) {
-        const errorDiv = document.getElementById(elementId);
-        errorDiv.innerHTML = message;
-        setTimeout(() => {
-            if (errorDiv) errorDiv.innerHTML = '';
-        }, 5000);
+        const el = document.getElementById(elementId);
+        el.innerHTML = message;
+        setTimeout(() => { el.innerHTML = ''; }, 5000);
     }
-    
-    function setLoading(btnId, isLoading, originalText) {
+    function setLoading(btnId, isLoading, text) {
         const btn = document.getElementById(btnId);
         if (isLoading) {
             btn.innerHTML = '<span class="loading"></span> جاري...';
-            btn.classList.add('btn-loading');
             btn.disabled = true;
         } else {
-            btn.innerHTML = originalText;
-            btn.classList.remove('btn-loading');
+            btn.innerHTML = text;
             btn.disabled = false;
         }
     }
-    
-    document.getElementById('loginBtn').addEventListener('click', async () => {
-        const email = document.getElementById('loginEmail').value.trim();
-        const password = document.getElementById('loginPassword').value;
-        
-        if (!email || !password) {
-            showError('loginMsg', '⚠️ الرجاء إدخال البريد الإلكتروني وكلمة المرور');
-            return;
-        }
-        
-        setLoading('loginBtn', true, '🚀 تسجيل الدخول');
-        
+    async function sendResetPassword() {
+        const email = document.getElementById('loginEmail').value;
+        if (!email) { showError('loginMsg', '⚠️ أدخل بريدك الإلكتروني'); return; }
         try {
-            const userCredential = await auth.signInWithEmailAndPassword(email, password);
-            const user = userCredential.user;
-            
-            const snapshot = await db.ref(`users/${user.uid}`).once('value');
-            if (!snapshot.exists()) {
+            await auth.sendPasswordResetEmail(email);
+            showError('loginMsg', '✅ تم إرسال رابط الاستعادة إلى بريدك');
+        } catch(e) { showError('loginMsg', '❌ ' + e.message); }
+    }
+    document.getElementById('googleLoginBtn').onclick = async () => {
+        try {
+            const result = await auth.signInWithPopup(new firebase.auth.GoogleAuthProvider());
+            const user = result.user;
+            const snap = await db.ref(`users/${user.uid}`).once('value');
+            if (!snap.exists()) {
                 await db.ref(`users/${user.uid}`).set({
-                    name: user.displayName || email.split('@')[0],
-                    email: email,
-                    bio: "مرحباً! أنا في LUME 🌟",
-                    avatar: "",
-                    cover: "",
-                    website: "",
-                    verified: false,
-                    isAdmin: email === ADMIN_EMAIL,
-                    blockedUsers: {},
-                    mutedUntil: 0,
-                    createdAt: Date.now()
+                    name: user.displayName || user.email.split('@')[0],
+                    email: user.email,
+                    bio: "مرحباً! أنا في LUME ✨",
+                    avatar: user.photoURL || "",
+                    cover: "", website: "", verified: false,
+                    isAdmin: user.email === ADMIN_EMAIL,
+                    blockedUsers: {}, mutedUntil: 0, createdAt: Date.now()
                 });
             }
-            
-            setLoading('loginBtn', false, '🚀 تسجيل الدخول');
             window.location.href = 'index.html';
-            
-        } catch (error) {
-            setLoading('loginBtn', false, '🚀 تسجيل الدخول');
+        } catch(e) { showError('loginMsg', '❌ ' + e.message); }
+    };
+    document.getElementById('googleRegisterBtn').onclick = async () => {
+        try {
+            const result = await auth.signInWithPopup(new firebase.auth.GoogleAuthProvider());
+            const user = result.user;
+            const snap = await db.ref(`users/${user.uid}`).once('value');
+            if (!snap.exists()) {
+                await db.ref(`users/${user.uid}`).set({
+                    name: user.displayName || user.email.split('@')[0],
+                    email: user.email,
+                    bio: "مرحباً! أنا في LUME ✨",
+                    avatar: user.photoURL || "",
+                    cover: "", website: "", verified: false,
+                    isAdmin: user.email === ADMIN_EMAIL,
+                    blockedUsers: {}, mutedUntil: 0, createdAt: Date.now()
+                });
+            }
+            window.location.href = 'index.html';
+        } catch(e) { showError('regMsg', '❌ ' + e.message); }
+    };
+    document.getElementById('loginBtn').onclick = async () => {
+        const email = document.getElementById('loginEmail').value.trim();
+        const password = document.getElementById('loginPassword').value;
+        if (!email || !password) { showError('loginMsg', '⚠️ أدخل البريد وكلمة المرور'); return; }
+        setLoading('loginBtn', true, '🚀 تسجيل الدخول');
+        try {
+            const cred = await auth.signInWithEmailAndPassword(email, password);
+            const snap = await db.ref(`users/${cred.user.uid}`).once('value');
+            if (!snap.exists()) {
+                await db.ref(`users/${cred.user.uid}`).set({
+                    name: cred.user.displayName || email.split('@')[0],
+                    email: email, bio: "مرحباً! أنا في LUME ✨",
+                    avatar: "", cover: "", website: "", verified: false,
+                    isAdmin: email === ADMIN_EMAIL,
+                    blockedUsers: {}, mutedUntil: 0, createdAt: Date.now()
+                });
+            }
+            window.location.href = 'index.html';
+        } catch(e) {
             let msg = '';
-            switch (error.code) {
-                case 'auth/user-not-found': msg = '❌ لا يوجد حساب بهذا البريد'; break;
-                case 'auth/wrong-password': msg = '❌ كلمة المرور غير صحيحة'; break;
-                case 'auth/invalid-email': msg = '❌ البريد الإلكتروني غير صالح'; break;
-                case 'auth/too-many-requests': msg = '❌ تم تعطيل الحساب مؤقتاً'; break;
-                default: msg = '❌ ' + error.message;
+            switch(e.code) {
+                case 'auth/user-not-found': msg = '❌ لا يوجد حساب'; break;
+                case 'auth/wrong-password': msg = '❌ كلمة مرور خاطئة'; break;
+                default: msg = '❌ ' + e.message;
             }
             showError('loginMsg', msg);
-        }
-    });
-    
-    document.getElementById('registerBtn').addEventListener('click', async () => {
+        } finally { setLoading('loginBtn', false, '🚀 تسجيل الدخول'); }
+    };
+    document.getElementById('registerBtn').onclick = async () => {
         const name = document.getElementById('regName').value.trim();
         const email = document.getElementById('regEmail').value.trim();
-        const password = document.getElementById('regPass').value;
-        const confirmPass = document.getElementById('regConfirmPass').value;
-        
-        if (!name || !email || !password) {
-            showError('regMsg', '⚠️ الرجاء ملء جميع الحقول');
-            return;
-        }
-        
-        if (password !== confirmPass) {
-            showError('regMsg', '⚠️ كلمة المرور غير متطابقة');
-            return;
-        }
-        
-        if (password.length < 6) {
-            showError('regMsg', '⚠️ كلمة المرور يجب أن تكون 6 أحرف على الأقل');
-            return;
-        }
-        
+        const pass = document.getElementById('regPass').value;
+        const confirm = document.getElementById('regConfirmPass').value;
+        if (!name || !email || !pass) { showError('regMsg', '⚠️ ملء جميع الحقول'); return; }
+        if (pass !== confirm) { showError('regMsg', '⚠️ كلمة المرور غير متطابقة'); return; }
+        if (pass.length < 6) { showError('regMsg', '⚠️ كلمة المرور 6 أحرف على الأقل'); return; }
         setLoading('registerBtn', true, '✨ إنشاء حساب');
-        
         try {
-            const userCredential = await auth.createUserWithEmailAndPassword(email, password);
-            await userCredential.user.updateProfile({ displayName: name });
-            
-            await db.ref(`users/${userCredential.user.uid}`).set({
-                name: name,
-                email: email,
-                bio: "مرحباً! أنا في LUME 🌟",
-                avatar: "",
-                cover: "",
-                website: "",
-                verified: false,
+            const cred = await auth.createUserWithEmailAndPassword(email, pass);
+            await cred.user.updateProfile({ displayName: name });
+            await db.ref(`users/${cred.user.uid}`).set({
+                name: name, email: email, bio: "مرحباً! أنا في LUME ✨",
+                avatar: "", cover: "", website: "", verified: false,
                 isAdmin: email === ADMIN_EMAIL,
-                blockedUsers: {},
-                mutedUntil: 0,
-                createdAt: Date.now()
+                blockedUsers: {}, mutedUntil: 0, createdAt: Date.now()
             });
-            
-            setLoading('registerBtn', false, '✨ إنشاء حساب');
             window.location.href = 'index.html';
-            
-        } catch (error) {
-            setLoading('registerBtn', false, '✨ إنشاء حساب');
+        } catch(e) {
             let msg = '';
-            switch (error.code) {
-                case 'auth/email-already-in-use': msg = '❌ البريد الإلكتروني مستخدم بالفعل'; break;
-                case 'auth/invalid-email': msg = '❌ البريد الإلكتروني غير صالح'; break;
-                case 'auth/weak-password': msg = '❌ كلمة المرور ضعيفة جداً'; break;
-                default: msg = '❌ ' + error.message;
+            switch(e.code) {
+                case 'auth/email-already-in-use': msg = '❌ البريد مستخدم'; break;
+                default: msg = '❌ ' + e.message;
             }
             showError('regMsg', msg);
-        }
-    });
-    
-    auth.onAuthStateChanged((user) => {
-        if (user) {
-            window.location.href = 'index.html';
-        }
-    });
+        } finally { setLoading('registerBtn', false, '✨ إنشاء حساب'); }
+    };
+    auth.onAuthStateChanged((user) => { if(user) window.location.href = 'index.html'; });
 </script>
-
 </body>
 </html>
