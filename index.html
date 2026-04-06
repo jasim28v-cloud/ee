@@ -2,496 +2,857 @@
 <html lang="ar" dir="rtl">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>LUME | منصة اجتماعية حديثة</title>
-    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>ZORAK | منصة تواصل اجتماعي</title>
+    <meta name="theme-color" content="#ffffff">
+    <meta name="description" content="ZORAK - منصة تواصل اجتماعي حديثة تجمع العالم">
+    
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Rubik:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.2/css/all.min.css">
+    
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-storage-compat.js"></script>
+    
     <script src="https://download.agora.io/sdk/release/AgoraRTC_N-4.22.0.js"></script>
+    
     <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; }
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
         body {
-            font-family: 'Cairo', sans-serif;
-            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f0f1f 100%);
+            font-family: 'Rubik', sans-serif;
+            background: linear-gradient(135deg, #f5f7fa 0%, #e4e8f0 100%);
             min-height: 100vh;
-            color: #fff;
+            color: #1a1a2e;
+            transition: background 0.3s ease, color 0.3s ease;
+            overflow-x: hidden;
         }
-        body.light-mode {
-            background: linear-gradient(135deg, #fef3c7 0%, #fed7aa 100%);
-            color: #1f2937;
+        
+        body.dark-mode {
+            background: linear-gradient(135deg, #0f0f1a 0%, #1a1a2e 50%, #16213e 100%);
+            color: #e0e0e0;
         }
-        /* Glassmorphism */
-        .glass-card {
-            background: rgba(255,255,255,0.05);
-            backdrop-filter: blur(12px);
-            border: 1px solid rgba(255,255,255,0.1);
-            border-radius: 24px;
-            transition: all 0.3s ease;
-        }
-        .glass-card:hover {
-            border-color: rgba(139, 92, 246, 0.5);
-            transform: translateY(-3px);
-        }
-        body.light-mode .glass-card {
-            background: rgba(255,255,255,0.7);
-            border: 1px solid rgba(0,0,0,0.05);
-        }
-        /* Top Bar */
-        .top-bar {
-            position: sticky;
-            top: 0;
-            background: rgba(15,15,31,0.95);
-            backdrop-filter: blur(20px);
-            border-bottom: 1px solid rgba(139,92,246,0.3);
-            padding: 12px 24px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            z-index: 100;
-        }
-        body.light-mode .top-bar {
-            background: rgba(255,255,255,0.95);
-            border-bottom: 1px solid rgba(0,0,0,0.05);
-        }
-        .logo {
-            font-size: 28px;
-            font-weight: 900;
-            background: linear-gradient(135deg, #a78bfa, #7c3aed, #c084fc);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            cursor: pointer;
-        }
-        /* Search Bar */
-        .search-bar {
-            display: flex;
-            align-items: center;
-            background: rgba(255,255,255,0.1);
-            border-radius: 40px;
-            padding: 8px 16px;
-            width: 300px;
-        }
-        .search-bar input {
-            background: none;
-            border: none;
-            color: white;
-            padding: 8px;
-            width: 100%;
-            outline: none;
-        }
-        body.light-mode .search-bar input { color: #1f2937; }
-        .search-bar input::placeholder { color: rgba(255,255,255,0.5); }
-        /* Layout */
-        .main-layout {
-            display: flex;
-            max-width: 1300px;
-            margin: 0 auto;
-            padding: 20px;
-            gap: 24px;
-        }
-        .feed-container {
-            flex: 1;
-            max-width: 650px;
-            margin: 0 auto;
-        }
-        /* Sidebar */
-        .trending-sidebar {
-            width: 320px;
-            position: sticky;
-            top: 80px;
-            height: calc(100vh - 100px);
-            overflow-y: auto;
-            padding: 20px;
-            background: rgba(15,15,31,0.6);
-            backdrop-filter: blur(20px);
-            border-radius: 28px;
-            border: 1px solid rgba(139,92,246,0.2);
-            display: none;
-        }
-        @media (min-width: 1024px) { .trending-sidebar { display: block; } }
-        /* Post Card */
-        .post-card {
-            background: rgba(255,255,255,0.05);
-            backdrop-filter: blur(12px);
-            border-radius: 28px;
-            margin-bottom: 20px;
-            border: 1px solid rgba(255,255,255,0.08);
-            transition: all 0.3s;
-            cursor: pointer;
-        }
-        .post-card:hover {
-            transform: translateY(-4px);
-            border-color: rgba(139,92,246,0.4);
-        }
-        .post-header {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            padding: 16px 20px;
-        }
-        .post-avatar {
-            width: 52px;
-            height: 52px;
-            border-radius: 50%;
-            background: linear-gradient(135deg, #7c3aed, #c084fc);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            overflow: hidden;
-        }
-        .post-avatar img { width: 100%; height: 100%; object-fit: cover; }
-        .post-image {
-            width: calc(100% - 32px);
-            max-height: 450px;
-            object-fit: cover;
-            border-radius: 20px;
-            margin: 8px 16px;
-            cursor: pointer;
-        }
-        .post-actions {
-            display: flex;
-            gap: 28px;
-            padding: 12px 20px;
-        }
-        .post-action {
-            background: none;
-            border: none;
-            font-size: 24px;
-            color: rgba(255,255,255,0.6);
-            cursor: pointer;
-            transition: all 0.2s;
-            display: flex;
-            align-items: center;
-            gap: 6px;
-        }
-        .post-action:hover { color: #7c3aed; transform: scale(1.05); }
-        .post-action.active { color: #ef4444; }
-        /* Bottom Nav */
-        .bottom-nav {
+        
+        body.dark-mode .wave-bg .wave { opacity: 0.15; }
+        body.dark-mode .post-card { background: rgba(30, 30, 46, 0.95); backdrop-filter: blur(10px); border: 1px solid rgba(255, 255, 255, 0.08); box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3); }
+        body.dark-mode .post-card:hover { box-shadow: 0 8px 30px rgba(0, 0, 0, 0.4); }
+        body.dark-mode .top-bar { background: rgba(18, 18, 30, 0.95); backdrop-filter: blur(10px); border-bottom: 1px solid rgba(255, 255, 255, 0.08); }
+        body.dark-mode .bottom-nav { background: rgba(18, 18, 30, 0.95); backdrop-filter: blur(10px); border-top: 1px solid rgba(255, 255, 255, 0.08); }
+        body.dark-mode .compose-content, body.dark-mode .chat-panel, body.dark-mode .modal-content { background: #1e1e30; color: #e0e0e0; border: 1px solid rgba(255, 255, 255, 0.08); }
+        body.dark-mode .message-bubble { background: #2a2a3a; color: #e0e0e0; }
+        body.dark-mode .message-bubble.sent { background: linear-gradient(135deg, #4f46e5, #7c3aed); color: white; }
+        body.dark-mode .poll-container { background: rgba(42, 42, 58, 0.8); }
+        body.dark-mode .poll-option { background: #2a2a3a; color: #e0e0e0; }
+        body.dark-mode .trending-sidebar { background: rgba(25, 25, 40, 0.8); backdrop-filter: blur(10px); border: 1px solid rgba(255, 255, 255, 0.08); }
+        body.dark-mode .trending-item { border-bottom: 1px solid rgba(255, 255, 255, 0.05); }
+        body.dark-mode .trending-item:hover { background: rgba(102, 126, 234, 0.15); }
+        body.dark-mode .top-icon { color: #aaa; }
+        body.dark-mode .top-icon:hover { color: #667eea; }
+        body.dark-mode .nav-item { color: #aaa; }
+        body.dark-mode .nav-item.active { color: #667eea; }
+        body.dark-mode .post-hashtags { color: #818cf8; }
+        body.dark-mode .profile-btn { background: rgba(42, 42, 58, 0.8); border-color: rgba(255, 255, 255, 0.1); color: #e0e0e0; }
+        body.dark-mode .profile-btn-primary { background: linear-gradient(135deg, #4f46e5, #7c3aed); color: white; border: none; }
+        body.dark-mode .chat-input { background: #2a2a3a; border-color: #3a3a4a; color: #e0e0e0; }
+        body.dark-mode .compose-textarea { background: transparent; color: #e0e0e0; }
+        body.dark-mode .drag-drop-area { background: rgba(102, 126, 234, 0.08); border-color: rgba(102, 126, 234, 0.3); }
+        body.dark-mode .skeleton { background: linear-gradient(90deg, #2a2a3a 25%, #3a3a4a 50%, #2a2a3a 75%); }
+        body.dark-mode .quote-post { background: rgba(42, 42, 58, 0.8); border-right-color: #667eea; }
+
+        .wave-bg {
             position: fixed;
             bottom: 0;
             left: 0;
-            right: 0;
-            background: rgba(15,15,31,0.95);
-            backdrop-filter: blur(20px);
-            border-top: 1px solid rgba(139,92,246,0.2);
+            width: 100%;
+            height: 100%;
+            z-index: -1;
+            overflow: hidden;
+        }
+        
+        .wave {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            height: 100px;
+            background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1440 320"><path fill="rgba(102,126,234,0.1)" fill-opacity="1" d="M0,96L48,112C96,128,192,160,288,160C384,160,480,128,576,122.7C672,117,768,139,864,154.7C960,171,1056,181,1152,165.3C1248,149,1344,107,1392,85.3L1440,64L1440,320L1392,320C1344,320,1248,320,1152,320C1056,320,960,320,864,320C768,320,672,320,576,320C480,320,384,320,288,320C192,320,96,320,48,320L0,320Z"></path></svg>') repeat-x;
+            background-size: cover;
+            animation: wave 10s linear infinite;
+            opacity: 0.5;
+        }
+        
+        .wave:nth-child(2) { bottom: 10px; animation: wave 15s linear infinite; opacity: 0.3; }
+        .wave:nth-child(3) { bottom: 20px; animation: wave 20s linear infinite; opacity: 0.2; }
+        
+        @keyframes wave { 0% { transform: translateX(0); } 100% { transform: translateX(-100%); } }
+        @keyframes fadeInUp { from { opacity: 0; transform: translateY(30px); } to { opacity: 1; transform: translateY(0); } }
+        @keyframes fadeInLeft { from { opacity: 0; transform: translateX(-30px); } to { opacity: 1; transform: translateX(0); } }
+        @keyframes fadeInRight { from { opacity: 0; transform: translateX(30px); } to { opacity: 1; transform: translateX(0); } }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        @keyframes float { 0%, 100% { transform: translateY(0px); } 50% { transform: translateY(-10px); } }
+        @keyframes shimmer { 0% { background-position: -1000px 0; } 100% { background-position: 1000px 0; } }
+        
+        .fade-in-up { animation: fadeInUp 0.6s ease-out forwards; }
+        .fade-in-left { animation: fadeInLeft 0.5s ease-out forwards; }
+        .fade-in-right { animation: fadeInRight 0.5s ease-out forwards; }
+        
+        .skeleton { background: linear-gradient(90deg, #e0e0e0 25%, #f0f0f0 50%, #e0e0e0 75%); background-size: 200% 100%; animation: shimmer 1.5s infinite; border-radius: 12px; }
+        .skeleton-avatar { width: 44px; height: 44px; border-radius: 50%; }
+        .skeleton-text { height: 12px; margin: 8px 0; border-radius: 6px; }
+        .skeleton-title { width: 60%; height: 16px; }
+        .skeleton-image { width: 100%; height: 300px; margin: 12px 0; }
+        
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: #e5e7eb; border-radius: 10px; }
+        ::-webkit-scrollbar-thumb { background: linear-gradient(135deg, #667eea, #764ba2); border-radius: 10px; }
+        body.dark-mode ::-webkit-scrollbar-track { background: #2a2a3a; }
+        
+        /* Main App */
+        #mainApp { display: none; min-height: 100vh; padding-bottom: 70px; }
+        
+        .top-bar {
+            position: sticky;
+            top: 0;
+            background: rgba(255, 255, 255, 0.85);
+            backdrop-filter: blur(10px);
+            border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+            padding: 12px 20px;
             display: flex;
-            justify-content: space-around;
-            padding: 10px 0 18px;
+            justify-content: space-between;
+            align-items: center;
             z-index: 100;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.05);
         }
-        .nav-item {
-            background: none;
-            border: none;
-            font-size: 26px;
-            color: rgba(255,255,255,0.5);
+        
+        .logo { font-size: 28px; font-weight: 900; background: linear-gradient(135deg, #667eea, #764ba2); -webkit-background-clip: text; -webkit-text-fill-color: transparent; cursor: pointer; }
+        .top-icons { display: flex; gap: 20px; align-items: center; }
+        .top-icon { font-size: 22px; color: #4b5563; cursor: pointer; transition: all 0.2s; }
+        .top-icon:hover { transform: translateY(-2px); color: #667eea; }
+        .top-icon:active { transform: scale(0.95); }
+        
+        .main-layout { display: flex; max-width: 1200px; margin: 0 auto; }
+        .feed-container { flex: 1; max-width: 600px; margin: 0 auto; padding: 0 0 20px; }
+        
+        .trending-sidebar {
+            width: 280px;
+            position: sticky;
+            top: 70px;
+            height: calc(100vh - 70px);
+            overflow-y: auto;
+            padding: 16px;
+            background: rgba(255, 255, 255, 0.7);
+            backdrop-filter: blur(10px);
+            border-radius: 24px;
+            margin-right: 20px;
+            display: none;
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            box-shadow: 10px 10px 30px rgba(0, 0, 0, 0.05);
+        }
+        
+        @media (min-width: 1024px) { .trending-sidebar { display: block; } }
+        
+        .trending-item { padding: 12px; border-bottom: 1px solid rgba(0, 0, 0, 0.05); cursor: pointer; transition: all 0.2s; border-radius: 12px; }
+        .trending-item:hover { background: rgba(102, 126, 234, 0.1); transform: translateX(-5px); }
+        .trending-hashtag { font-weight: 600; color: #667eea; }
+        
+        .post-card {
+            background: rgba(255, 255, 255, 0.85);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            margin-bottom: 16px;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
             cursor: pointer;
-            transition: all 0.2s;
+            border-radius: 24px;
+            overflow: hidden;
+            box-shadow: 10px 10px 30px rgba(0, 0, 0, 0.05), -5px -5px 15px rgba(255, 255, 255, 0.5);
         }
-        .nav-item.active { color: #7c3aed; }
-        /* Modal */
-        .modal {
+        
+        .post-card.pinned { border-right: 4px solid #667eea; }
+        .pinned-badge { position: absolute; top: 12px; left: 12px; background: linear-gradient(135deg, #667eea, #764ba2); color: white; padding: 4px 10px; border-radius: 20px; font-size: 10px; font-weight: 600; z-index: 10; }
+        
+        .post-header { display: flex; align-items: center; justify-content: space-between; padding: 12px 16px; }
+        .post-user-info { display: flex; align-items: center; gap: 12px; cursor: pointer; }
+        .post-avatar { width: 44px; height: 44px; border-radius: 50%; overflow: hidden; background: linear-gradient(135deg, #667eea, #764ba2); display: flex; align-items: center; justify-content: center; transition: transform 0.3s; }
+        .post-avatar:hover { transform: scale(1.05); }
+        .post-avatar img { width: 100%; height: 100%; object-fit: cover; }
+        .post-username { font-weight: 700; font-size: 15px; display: flex; align-items: center; gap: 6px; }
+        .verified-badge { color: #3b82f6; font-size: 14px; }
+        .post-time { font-size: 11px; color: #9ca3af; margin-top: 2px; }
+        .post-menu { background: none; border: none; font-size: 18px; cursor: pointer; color: #6b7280; transition: all 0.2s; padding: 6px; }
+        .post-menu:hover { color: #667eea; transform: rotate(15deg); }
+        .post-menu:active { transform: scale(0.9); }
+        
+        .post-image { width: 100%; max-height: 400px; object-fit: cover; cursor: pointer; transition: transform 0.3s ease; }
+        .post-image:hover { transform: scale(1.02); }
+        
+        .video-container { position: relative; background: #000; overflow: hidden; cursor: pointer; }
+        .post-video { width: 100%; max-height: 450px; object-fit: cover; display: block; }
+        .video-overlay { position: absolute; bottom: 10px; right: 10px; background: rgba(0, 0, 0, 0.6); backdrop-filter: blur(4px); border-radius: 30px; padding: 6px 12px; display: flex; gap: 12px; opacity: 0; transition: opacity 0.2s; }
+        .video-container:hover .video-overlay { opacity: 1; }
+        .video-overlay button { background: none; border: none; color: white; font-size: 14px; cursor: pointer; transition: transform 0.2s; }
+        .video-overlay button:hover { color: #667eea; transform: scale(1.1); }
+        
+        .image-viewer-modal {
             position: fixed;
             inset: 0;
-            background: rgba(0,0,0,0.95);
+            background: rgba(0, 0, 0, 0.85);
             backdrop-filter: blur(20px);
+            z-index: 1000;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.3s ease;
+        }
+        .image-viewer-modal.open { opacity: 1; visibility: visible; }
+        .image-viewer-modal img { max-width: 90%; max-height: 90%; object-fit: contain; border-radius: 20px; animation: fadeInUp 0.3s ease-out; }
+        .image-viewer-close { position: absolute; top: 20px; right: 20px; font-size: 28px; color: white; cursor: pointer; background: rgba(0, 0, 0, 0.5); backdrop-filter: blur(4px); width: 44px; height: 44px; border-radius: 50%; display: flex; align-items: center; justify-content: center; transition: all 0.2s; }
+        
+        .post-actions { display: flex; gap: 24px; padding: 8px 16px; }
+        .post-action { background: none; border: none; font-size: 22px; cursor: pointer; color: #6b7280; transition: all 0.2s; }
+        .post-action:hover { transform: scale(1.1); }
+        .post-action:active { transform: scale(0.9); }
+        .post-action.active { color: #ef4444; }
+        .post-likes { font-weight: 600; font-size: 13px; padding: 0 16px 4px; }
+        .post-caption { padding: 0 16px 8px; font-size: 14px; }
+        .post-caption span { font-weight: 700; cursor: pointer; transition: color 0.2s; }
+        .post-caption span:hover { color: #667eea; }
+        .post-hashtags { color: #667eea; cursor: pointer; transition: color 0.2s; }
+        .post-hashtags:hover { text-decoration: underline; }
+        .post-comments { padding: 0 16px 8px; font-size: 13px; color: #9ca3af; cursor: pointer; transition: color 0.2s; }
+        .post-comments:hover { color: #667eea; }
+        .post-views { padding: 0 16px 12px; font-size: 11px; color: #9ca3af; }
+        
+        .poll-container { background: rgba(0, 0, 0, 0.05); border-radius: 16px; padding: 12px; margin: 8px 12px; }
+        .poll-option { background: white; border-radius: 12px; padding: 10px; margin: 8px 0; cursor: pointer; transition: all 0.2s; position: relative; overflow: hidden; }
+        .poll-option:hover { background: rgba(102, 126, 234, 0.1); transform: translateX(5px); }
+        .poll-option.selected { background: linear-gradient(135deg, #667eea, #764ba2); color: white; }
+        .poll-progress { position: absolute; left: 0; top: 0; height: 100%; background: rgba(102, 126, 234, 0.2); transition: width 0.3s ease; z-index: 0; }
+        .poll-option-text { position: relative; z-index: 1; display: flex; justify-content: space-between; }
+        
+        .quote-post { background: rgba(0, 0, 0, 0.05); border-radius: 16px; padding: 12px; margin: 8px 12px; border-right: 4px solid #667eea; cursor: pointer; transition: all 0.2s; }
+        .quote-post:hover { background: rgba(102, 126, 234, 0.1); transform: translateX(5px); }
+        
+        .compose-modal {
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.8);
+            backdrop-filter: blur(10px);
             z-index: 200;
             display: flex;
             align-items: center;
             justify-content: center;
             opacity: 0;
             visibility: hidden;
-            transition: all 0.3s;
+            transition: all 0.3s ease;
         }
-        .modal.open { opacity: 1; visibility: visible; }
-        .modal-content {
-            background: rgba(15,15,31,0.95);
-            border-radius: 32px;
-            width: 90%;
-            max-width: 550px;
-            max-height: 80vh;
-            overflow-y: auto;
-            border: 1px solid rgba(139,92,246,0.3);
-            padding: 24px;
+        .compose-modal.open { opacity: 1; visibility: visible; }
+        .compose-content { background: rgba(255, 255, 255, 0.95); backdrop-filter: blur(10px); border-radius: 32px; width: 90%; max-width: 550px; max-height: 85vh; overflow-y: auto; border: 1px solid rgba(255, 255, 255, 0.3); box-shadow: 20px 20px 40px rgba(0, 0, 0, 0.1); animation: fadeInUp 0.3s ease-out; }
+        .compose-header { display: flex; justify-content: space-between; align-items: center; padding: 16px 20px; border-bottom: 1px solid rgba(0, 0, 0, 0.1); }
+        .compose-textarea { width: 100%; min-height: 120px; border: none; resize: none; font-size: 16px; outline: none; font-family: 'Rubik', sans-serif; padding: 16px 20px; background: transparent; }
+        
+        .drag-drop-area {
+            border: 2px dashed rgba(102, 126, 234, 0.3);
+            border-radius: 20px;
+            padding: 30px;
+            margin: 12px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            background: rgba(102, 126, 234, 0.05);
         }
-        /* Chat Panel */
+        .drag-drop-area.drag-over { border-color: #667eea; background: rgba(102, 126, 234, 0.1); transform: scale(1.02); }
+        .drag-drop-area i { font-size: 48px; color: #667eea; margin-bottom: 12px; }
+        
+        .media-preview { margin: 12px; position: relative; display: none; }
+        .media-preview.active { display: block; animation: fadeInUp 0.3s ease-out; }
+        .preview-container { position: relative; border-radius: 20px; overflow: hidden; background: #000; }
+        .preview-container img, .preview-container video { width: 100%; max-height: 300px; object-fit: contain; }
+        .preview-info { position: absolute; bottom: 0; left: 0; right: 0; background: linear-gradient(transparent, rgba(0,0,0,0.7)); padding: 12px; color: white; font-size: 12px; display: flex; justify-content: space-between; align-items: center; }
+        .remove-media { position: absolute; top: 12px; right: 12px; background: rgba(0, 0, 0, 0.6); backdrop-filter: blur(4px); color: white; border-radius: 50%; width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: all 0.2s; z-index: 10; }
+        .remove-media:hover { background: rgba(0, 0, 0, 0.8); transform: scale(1.1); }
+        
+        .upload-progress { margin: 12px; display: none; }
+        .upload-progress.active { display: block; }
+        .progress-bar { width: 100%; height: 6px; background: rgba(0, 0, 0, 0.1); border-radius: 10px; overflow: hidden; }
+        .progress-fill { width: 0%; height: 100%; background: linear-gradient(135deg, #667eea, #764ba2); border-radius: 10px; transition: width 0.3s ease; }
+        .progress-text { font-size: 12px; margin-top: 8px; text-align: center; color: #667eea; }
+        
+        .compose-tools { display: flex; gap: 16px; padding: 12px 20px; border-top: 1px solid rgba(0, 0, 0, 0.1); border-bottom: 1px solid rgba(0, 0, 0, 0.1); }
+        .compose-tool { background: none; border: none; font-size: 24px; cursor: pointer; color: #6b7280; transition: all 0.2s; padding: 8px; border-radius: 12px; }
+        .compose-tool:hover { background: rgba(102, 126, 234, 0.1); color: #667eea; transform: translateY(-2px); }
+        
+        .bottom-nav {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: rgba(255, 255, 255, 0.85);
+            backdrop-filter: blur(10px);
+            border-top: 1px solid rgba(0, 0, 0, 0.05);
+            display: flex;
+            justify-content: space-around;
+            padding: 10px 0 14px;
+            z-index: 100;
+        }
+        .nav-item { background: none; border: none; font-size: 24px; color: #6b7280; cursor: pointer; transition: all 0.2s; padding: 6px; }
+        .nav-item:hover { transform: translateY(-3px); color: #667eea; }
+        .nav-item:active { transform: scale(0.9); }
+        .nav-item.active { color: #667eea; }
+        
         .chat-panel {
             position: fixed;
             inset: 0;
-            background: rgba(15,15,31,0.98);
-            backdrop-filter: blur(20px);
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
             z-index: 400;
             transform: translateX(100%);
-            transition: transform 0.3s;
+            transition: transform 0.3s ease;
             display: flex;
             flex-direction: column;
         }
         .chat-panel.open { transform: translateX(0); }
-        .chat-messages {
-            flex: 1;
-            overflow-y: auto;
-            padding: 20px;
-            display: flex;
-            flex-direction: column;
-            gap: 12px;
-        }
-        .message-bubble {
-            background: rgba(255,255,255,0.1);
-            padding: 12px 18px;
-            border-radius: 24px;
-            max-width: 75%;
-        }
-        .message-bubble.sent {
-            background: linear-gradient(135deg, #7c3aed, #c084fc);
-            align-self: flex-end;
-        }
-        /* Admin Panel */
+        .chat-header { padding: 16px; border-bottom: 1px solid rgba(0, 0, 0, 0.1); display: flex; justify-content: space-between; align-items: center; }
+        .chat-messages { flex: 1; overflow-y: auto; padding: 16px; display: flex; flex-direction: column; gap: 12px; }
+        .chat-message { display: flex; gap: 8px; max-width: 80%; animation: fadeInLeft 0.3s ease-out; }
+        .chat-message.sent { align-self: flex-end; flex-direction: row-reverse; animation: fadeInRight 0.3s ease-out; }
+        .message-bubble { background: rgba(0, 0, 0, 0.05); padding: 10px 14px; border-radius: 20px; font-size: 14px; transition: transform 0.2s; }
+        .message-bubble:hover { transform: scale(1.02); }
+        .message-bubble.sent { background: linear-gradient(135deg, #667eea, #764ba2); color: white; }
+        .chat-input-area { display: flex; gap: 12px; padding: 12px; border-top: 1px solid rgba(0, 0, 0, 0.1); align-items: center; }
+        .chat-input { flex: 1; padding: 10px 14px; border: 1px solid rgba(0, 0, 0, 0.1); border-radius: 25px; outline: none; font-size: 14px; font-family: 'Rubik', sans-serif; background: rgba(255, 255, 255, 0.9); transition: all 0.2s; }
+        .chat-input:focus { border-color: #667eea; box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1); }
+        .chat-send-btn { background: none; border: none; font-size: 22px; cursor: pointer; color: #667eea; transition: all 0.2s; }
+        .chat-send-btn:hover { transform: scale(1.1); }
+        
         .admin-panel {
             position: fixed;
             inset: 0;
-            background: rgba(10,10,20,0.98);
-            backdrop-filter: blur(20px);
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
             z-index: 500;
             transform: translateX(100%);
-            transition: transform 0.3s;
+            transition: transform 0.3s ease;
             overflow-y: auto;
         }
         .admin-panel.open { transform: translateX(0); }
-        .admin-stats {
-            display: grid;
-            grid-template-columns: repeat(3,1fr);
-            gap: 16px;
-            padding: 20px;
+        .admin-stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; padding: 16px; }
+        .admin-stat-card { background: linear-gradient(135deg, #667eea, #764ba2); padding: 16px; border-radius: 20px; text-align: center; color: white; transition: transform 0.3s; }
+        .admin-stat-card:hover { transform: translateY(-5px); }
+        .admin-stat-number { font-size: 28px; font-weight: 700; }
+        .admin-item { display: flex; justify-content: space-between; align-items: center; padding: 12px; border-bottom: 1px solid rgba(0, 0, 0, 0.1); transition: background 0.2s; }
+        .admin-item:hover { background: rgba(102, 126, 234, 0.05); }
+        .admin-delete-btn, .admin-mute-btn, .admin-verify-btn { padding: 6px 12px; border-radius: 8px; border: none; cursor: pointer; margin: 0 4px; font-size: 12px; transition: all 0.2s; }
+        .admin-delete-btn:hover { transform: scale(1.05); background: #dc2626; }
+        .admin-mute-btn:hover { transform: scale(1.05); background: #d97706; }
+        .admin-verify-btn:hover { transform: scale(1.05); background: #059669; }
+        .admin-delete-btn { background: #ef4444; color: white; }
+        .admin-mute-btn { background: #f59e0b; color: white; }
+        .admin-verify-btn { background: #10b981; color: white; }
+        
+        .profile-cover { width: 100%; height: 180px; background: linear-gradient(135deg, #667eea, #764ba2); background-size: cover; background-position: center; cursor: pointer; transition: transform 0.3s; }
+        .profile-cover:hover { transform: scale(1.01); }
+        .profile-avatar-wrapper { position: relative; margin-top: -50px; padding: 0 16px; }
+        .profile-avatar-large { width: 100px; height: 100px; border-radius: 50%; overflow: hidden; border: 4px solid white; background: linear-gradient(135deg, #667eea, #764ba2); cursor: pointer; transition: transform 0.3s; }
+        .profile-avatar-large:hover { transform: scale(1.05); }
+        .profile-info { padding: 12px 16px 16px; }
+        .profile-name { font-size: 20px; font-weight: 700; display: flex; align-items: center; gap: 8px; }
+        .profile-stats { display: flex; gap: 24px; margin-top: 12px; padding: 12px 0; border-top: 1px solid rgba(0, 0, 0, 0.1); border-bottom: 1px solid rgba(0, 0, 0, 0.1); }
+        .stat-item { text-align: center; cursor: pointer; transition: all 0.2s; }
+        .stat-item:hover { transform: translateY(-2px); color: #667eea; }
+        .stat-number { font-weight: 700; font-size: 18px; }
+        .profile-buttons { display: flex; gap: 10px; margin-top: 16px; }
+        .profile-btn { flex: 1; padding: 8px; border-radius: 12px; font-weight: 600; font-size: 14px; cursor: pointer; border: 1px solid rgba(0, 0, 0, 0.1); background: rgba(255, 255, 255, 0.8); transition: all 0.2s; }
+        .profile-btn:hover { transform: translateY(-2px); background: rgba(102, 126, 234, 0.1); }
+        .profile-btn-primary { background: linear-gradient(135deg, #667eea, #764ba2); color: white; border: none; }
+        .profile-btn-primary:hover { transform: translateY(-2px); box-shadow: 0 5px 15px rgba(102, 126, 234, 0.3); }
+        .profile-tabs { display: flex; margin-top: 8px; }
+        .profile-tab { flex: 1; text-align: center; padding: 12px; cursor: pointer; font-size: 14px; font-weight: 600; color: #9ca3af; background: none; border: none; transition: all 0.2s; }
+        .profile-tab:hover { color: #667eea; }
+        .profile-tab.active { color: #667eea; border-bottom: 2px solid #667eea; }
+        .profile-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 2px; margin-top: 8px; }
+        .grid-item { aspect-ratio: 1; overflow: hidden; cursor: pointer; position: relative; transition: transform 0.3s; }
+        .grid-item:hover { transform: scale(1.02); }
+        .grid-item img, .grid-item video { width: 100%; height: 100%; object-fit: cover; }
+        .grid-item-overlay { position: absolute; bottom: 0; left: 0; right: 0; background: rgba(0, 0, 0, 0.6); color: white; display: flex; justify-content: center; gap: 16px; padding: 4px; font-size: 12px; }
+        
+        .skeleton-post { background: rgba(255, 255, 255, 0.85); backdrop-filter: blur(10px); border-radius: 24px; padding: 16px; margin-bottom: 16px; }
+        .skeleton-header { display: flex; align-items: center; gap: 12px; margin-bottom: 12px; }
+        
+        #customToast {
+            position: fixed;
+            bottom: 80px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: #1f2937;
+            color: white;
+            padding: 12px 24px;
+            border-radius: 40px;
+            z-index: 1100;
+            font-size: 14px;
+            opacity: 0;
+            transition: opacity 0.3s;
+            pointer-events: none;
+            white-space: nowrap;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
         }
-        .admin-stat-card {
-            background: linear-gradient(135deg, #7c3aed, #c084fc);
-            padding: 20px;
-            border-radius: 24px;
-            text-align: center;
+        body.dark-mode #customToast { background: #374151; }
+        
+        .modal-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.8);
+            backdrop-filter: blur(10px);
+            z-index: 600;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.2s;
         }
-        /* Loading */
-        .spinner {
-            width: 40px;
-            height: 40px;
-            border: 3px solid rgba(139,92,246,0.2);
-            border-top-color: #7c3aed;
-            border-radius: 50%;
-            animation: spin 0.8s linear infinite;
-            margin: 0 auto;
+        .modal-overlay.open { opacity: 1; visibility: visible; }
+        .modal-content { background: rgba(255, 255, 255, 0.95); backdrop-filter: blur(10px); border-radius: 24px; padding: 24px; width: 90%; max-width: 400px; animation: fadeInUp 0.3s ease-out; }
+        
+        .heart-animation { position: fixed; font-size: 48px; color: #ef4444; pointer-events: none; z-index: 1000; animation: fadeInUp 0.6s ease-out forwards; }
+        
+        .follower-item { display: flex; align-items: center; gap: 12px; padding: 12px; cursor: pointer; transition: all 0.2s; border-bottom: 1px solid rgba(0, 0, 0, 0.05); }
+        .follower-item:hover { background: rgba(102, 126, 234, 0.05); transform: translateX(-5px); }
+        .follower-item:active { transform: scale(0.98); }
+        
+        .toggle-switch { width: 50px; height: 24px; background: rgba(0, 0, 0, 0.2); border-radius: 24px; cursor: pointer; position: relative; transition: all 0.2s; }
+        .toggle-switch.active { background: #667eea; }
+        .toggle-switch::after { content: ''; width: 20px; height: 20px; background: white; border-radius: 50%; position: absolute; top: 2px; left: 4px; transition: all 0.2s; }
+        .toggle-switch.active::after { left: 26px; }
+        
+        .video-call-modal {
+            position: fixed;
+            inset: 0;
+            background: #000;
+            z-index: 700;
+            display: flex;
+            flex-direction: column;
+            opacity: 0;
+            visibility: hidden;
         }
-        @keyframes spin { to { transform: rotate(360deg); } }
-        /* Toast */
-        #toast {
+        .video-call-modal.open { opacity: 1; visibility: visible; }
+        #remoteVideo { flex: 1; background: #000; }
+        #localVideo { width: 120px; height: 180px; position: absolute; bottom: 20px; right: 20px; background: #333; border-radius: 16px; border: 2px solid white; }
+        .call-controls { padding: 20px; display: flex; justify-content: center; }
+        .call-end-btn { background: #ef4444; color: white; border: none; width: 60px; height: 60px; border-radius: 50%; font-size: 24px; cursor: pointer; transition: all 0.2s; }
+        .call-end-btn:hover { transform: scale(1.1); background: #dc2626; }
+        
+        .quick-emojis { display: flex; gap: 12px; padding: 8px 20px; border-top: 1px solid rgba(0, 0, 0, 0.1); }
+        .quick-emojis span { font-size: 22px; cursor: pointer; transition: all 0.2s; }
+        .quick-emojis span:hover { transform: scale(1.2); }
+        
+        @media (max-width: 768px) {
+            .logo { font-size: 24px; }
+            .post-card { margin: 8px; }
+        }
+        
+        .loading { text-align: center; padding: 60px 20px; }
+        .spinner { width: 32px; height: 32px; border: 3px solid rgba(0, 0, 0, 0.1); border-top-color: #667eea; border-radius: 50%; animation: spin 0.8s linear infinite; margin: 0 auto 12px; }
+        
+        .load-more-btn { text-align: center; padding: 16px; margin: 16px; background: rgba(102, 126, 234, 0.1); border-radius: 30px; cursor: pointer; transition: all 0.2s; }
+        .load-more-btn:hover { background: rgba(102, 126, 234, 0.2); transform: translateY(-2px); }
+        
+        #initLoader {
+            position: fixed;
+            inset: 0;
+            background: linear-gradient(135deg, #f5f7fa 0%, #e4e8f0 100%);
+            z-index: 9999;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-direction: column;
+            transition: opacity 0.3s;
+        }
+        body.dark-mode #initLoader { background: linear-gradient(135deg, #0f0f1a 0%, #1a1a2e 50%, #16213e 100%); }
+        
+        .recording-indicator {
+            display: none;
             position: fixed;
             bottom: 100px;
             left: 50%;
             transform: translateX(-50%);
-            background: rgba(0,0,0,0.9);
-            backdrop-filter: blur(20px);
-            padding: 12px 24px;
-            border-radius: 60px;
+            background: #ef4444;
+            color: white;
+            padding: 8px 16px;
+            border-radius: 40px;
             z-index: 1100;
-            opacity: 0;
-            transition: opacity 0.2s;
-            pointer-events: none;
         }
-        /* Responsive */
-        @media (max-width: 768px) {
-            .main-layout { padding: 12px; }
-            .post-avatar { width: 44px; height: 44px; }
-            .logo { font-size: 22px; }
-            .search-bar { width: 180px; }
+        
+        .notification-badge {
+            position: absolute;
+            top: -6px;
+            right: -10px;
+            background: #ef4444;
+            color: white;
+            font-size: 9px;
+            border-radius: 50%;
+            width: 16px;
+            height: 16px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .typing-indicator {
+            padding: 8px 16px;
+            font-size: 12px;
+            color: #9ca3af;
+            font-style: italic;
+        }
+        
+        .message-image {
+            max-width: 200px;
+            border-radius: 12px;
+            margin-top: 8px;
+            cursor: pointer;
+        }
+        
+        .audio-player {
+            margin-top: 8px;
+            height: 36px;
         }
     </style>
 </head>
 <body>
 
-<div id="loader" style="position:fixed;inset:0;background:linear-gradient(135deg,#667eea,#764ba2);z-index:9999;display:flex;align-items:center;justify-content:center;flex-direction:column">
-    <div class="spinner"></div>
-    <div style="margin-top:16px">🌟 جاري تحميل LUME 🌟</div>
+<div class="wave-bg">
+    <div class="wave"></div>
+    <div class="wave"></div>
+    <div class="wave"></div>
 </div>
 
-<div id="mainApp" style="display:none">
+<div id="initLoader">
+    <div class="spinner"></div>
+    <div style="margin-top: 16px; color: #667eea; font-weight: 500;">جاري تحميل ZORAK...</div>
+</div>
+
+<!-- Main App (بدون شاشة تسجيل دخول) -->
+<div id="mainApp">
     <div class="top-bar">
-        <div class="logo" onclick="location.reload()">✨ LUME</div>
-        <div class="search-bar">
-            <i class="fas fa-search" style="margin-left:8px;opacity:0.6"></i>
-            <input type="text" id="searchInput" placeholder="بحث عن مستخدمين أو هاشتاجات..." onkeyup="searchAll()">
-        </div>
-        <div style="display:flex;gap:20px">
-            <i class="fa-regular fa-message top-icon" onclick="openConversations()" style="font-size:22px;cursor:pointer"></i>
-            <i class="fa-regular fa-bell top-icon" onclick="openNotifications()" style="font-size:22px;cursor:pointer"></i>
-            <i class="fa-solid fa-sun top-icon" onclick="toggleTheme()" style="font-size:22px;cursor:pointer"></i>
-            <i class="fa-solid fa-right-from-bracket top-icon" onclick="logout()" style="font-size:22px;cursor:pointer;color:#ef4444"></i>
+        <div class="logo" onclick="goToHome()">✨ ZORAK ✨</div>
+        <div class="top-icons">
+            <i class="fa-regular fa-message top-icon" onclick="openConversations()"></i>
+            <i class="fa-regular fa-bookmark top-icon" onclick="openSavedPosts()"></i>
+            <i class="fa-solid fa-moon top-icon" onclick="toggleTheme()" id="themeToggle"></i>
+            <i class="fa-solid fa-right-from-bracket top-icon" onclick="logout()" style="color: #ef4444;"></i>
         </div>
     </div>
-
+    
     <div class="main-layout">
-        <div id="feedContainer" class="feed-container">
-            <div style="text-align:center;padding:60px"><div class="spinner"></div><div style="margin-top:16px">جاري التحميل...</div></div>
-        </div>
-        <div class="trending-sidebar">
-            <h3 style="margin-bottom:20px">🔥 الترند الساخن</h3>
+        <div id="feedContainer" class="feed-container"></div>
+        <div class="trending-sidebar" id="trendingSidebar">
+            <div style="font-weight: 700; margin-bottom: 16px; font-size: 18px;">🔥 الترند</div>
             <div id="trendingList"></div>
-            <div style="margin-top:30px;padding-top:20px;border-top:1px solid rgba(255,255,255,0.1)">
-                <h4>⚙️ الإعدادات</h4>
-                <div style="display:flex;justify-content:space-between;margin:12px 0">
+            <div style="margin-top: 20px; padding-top: 16px; border-top: 1px solid rgba(0, 0, 0, 0.1);">
+                <div style="font-weight: 600; margin-bottom: 12px;">⚙️ الإعدادات</div>
+                <div style="display: flex; justify-content: space-between; margin-bottom: 12px;">
                     <span>📖 وضع القراءة</span>
-                    <div class="toggle-switch" id="readModeToggle" onclick="toggleReadMode()" style="width:50px;height:24px;background:#ddd;border-radius:24px;cursor:pointer;position:relative"></div>
+                    <div class="toggle-switch" id="readModeToggle" onclick="toggleReadMode()"></div>
                 </div>
-                <div style="display:flex;justify-content:space-between;margin:12px 0">
+                <div style="display: flex; justify-content: space-between; margin-bottom: 12px;">
                     <span>🔕 عدم الإزعاج</span>
-                    <div class="toggle-switch" id="dndToggle" onclick="toggleDoNotDisturb()" style="width:50px;height:24px;background:#ddd;border-radius:24px;cursor:pointer;position:relative"></div>
+                    <div class="toggle-switch" id="dndToggle" onclick="toggleDoNotDisturb()"></div>
+                </div>
+                <div style="display: flex; justify-content: space-between;">
+                    <span>🔒 إخفاء الإعجابات</span>
+                    <div class="toggle-switch" id="hideLikesToggle" onclick="toggleHideLikes()"></div>
                 </div>
             </div>
         </div>
     </div>
-
+    
     <div class="bottom-nav">
         <button class="nav-item active" onclick="switchTab('home')"><i class="fa-solid fa-house"></i></button>
+        <button class="nav-item" onclick="openSearch()"><i class="fa-solid fa-magnifying-glass"></i></button>
         <button class="nav-item" onclick="openCompose()"><i class="fa-regular fa-square-plus"></i></button>
+        <button class="nav-item" onclick="openNotifications()"><i class="fa-regular fa-bell"></i></button>
         <button class="nav-item" onclick="openMyProfile()"><i class="fa-regular fa-circle-user"></i></button>
     </div>
-
+    
     <!-- Compose Modal -->
-    <div id="composeModal" class="modal">
-        <div class="modal-content">
-            <div style="display:flex;justify-content:space-between;margin-bottom:20px">
-                <h3>✨ إنشاء منشور</h3>
-                <button onclick="closeCompose()" style="background:none;border:none;font-size:28px;cursor:pointer;color:white">&times;</button>
+    <div id="composeModal" class="compose-modal">
+        <div class="compose-content">
+            <div class="compose-header">
+                <h3 style="font-weight: 700;">إنشاء منشور جديد</h3>
+                <button onclick="closeCompose()" style="background: none; border: none; font-size: 24px; cursor: pointer;">&times;</button>
             </div>
-            <textarea id="postText" class="compose-textarea" placeholder="اكتب منشوراً..." style="width:100%;min-height:120px;background:rgba(255,255,255,0.05);border:none;border-radius:20px;padding:16px;color:white;font-family:Cairo;margin-bottom:16px"></textarea>
-            <div id="mediaPreview" style="display:none;margin-bottom:16px"></div>
-            <div id="uploadProgress" style="display:none;margin-bottom:16px">
-                <div style="background:rgba(255,255,255,0.1);border-radius:30px;height:8px"><div id="progressFill" style="width:0%;height:100%;background:#7c3aed;border-radius:30px"></div></div>
+            <div class="compose-area">
+                <textarea id="postText" class="compose-textarea" placeholder="اكتب منشوراً..."></textarea>
+                
+                <div id="dragDropArea" class="drag-drop-area" onclick="document.getElementById('postImage').click()">
+                    <i class="fa-regular fa-cloud-arrow-up"></i>
+                    <p>اسحب ملفاتك هنا أو انقر للرفع</p>
+                    <p style="font-size: 12px; margin-top: 8px;">يدعم الصور والفيديوهات</p>
+                </div>
+                
+                <div id="mediaPreview" class="media-preview">
+                    <div class="preview-container">
+                        <img id="previewImage" src="" style="display: none;">
+                        <video id="previewVideo" src="" controls style="display: none;"></video>
+                        <div class="preview-info">
+                            <span id="previewFileName"></span>
+                            <span id="previewFileSize"></span>
+                        </div>
+                        <div class="remove-media" onclick="removeSelectedMedia()">
+                            <i class="fa-solid fa-xmark"></i>
+                        </div>
+                    </div>
+                </div>
+                
+                <div id="uploadProgress" class="upload-progress">
+                    <div class="progress-bar">
+                        <div class="progress-fill" id="progressFill"></div>
+                    </div>
+                    <div class="progress-text" id="progressText">0%</div>
+                </div>
+                
+                <div class="quick-emojis">
+                    <span onclick="addEmojiToPost('😊')">😊</span>
+                    <span onclick="addEmojiToPost('😂')">😂</span>
+                    <span onclick="addEmojiToPost('❤️')">❤️</span>
+                    <span onclick="addEmojiToPost('🔥')">🔥</span>
+                    <span onclick="addEmojiToPost('🎉')">🎉</span>
+                    <span onclick="addEmojiToPost('😢')">😢</span>
+                </div>
+                <div class="compose-tools">
+                    <button class="compose-tool" onclick="document.getElementById('postImage').click()"><i class="fa-regular fa-image"></i></button>
+                    <button class="compose-tool" onclick="document.getElementById('postVideo').click()"><i class="fa-solid fa-video"></i></button>
+                    <button class="compose-tool" onclick="addPollToCompose()"><i class="fa-solid fa-chart-simple"></i></button>
+                </div>
+                <input type="file" id="postImage" accept="image/*" style="display:none" onchange="handleFileSelect(this, 'image')">
+                <input type="file" id="postVideo" accept="video/*" style="display:none" onchange="handleFileSelect(this, 'video')">
+                <div id="pollBuilder" style="display: none; margin: 12px;">
+                    <input type="text" id="pollQuestion" placeholder="سؤال التصويت..." class="chat-input" style="width: 100%; margin-bottom: 8px;">
+                    <input type="text" id="pollOption1" placeholder="خيار 1" class="chat-input" style="width: 100%; margin-bottom: 4px;">
+                    <input type="text" id="pollOption2" placeholder="خيار 2" class="chat-input" style="width: 100%; margin-bottom: 4px;">
+                    <button onclick="addPollOption()" style="background: none; border: 1px solid #667eea; color: #667eea; padding: 4px 8px; border-radius: 8px;">+ إضافة خيار</button>
+                </div>
+                <button id="publishPostBtn" onclick="createPost()" style="width: 100%; background: linear-gradient(135deg, #667eea, #764ba2); color: white; padding: 14px; border-radius: 16px; margin-top: 16px; font-weight: 700; border: none; cursor: pointer;">✨ نشر</button>
             </div>
-            <div style="display:flex;gap:16px;margin-bottom:16px">
-                <button class="compose-tool" onclick="document.getElementById('postImage').click()" style="background:none;border:none;font-size:24px;cursor:pointer"><i class="fa-regular fa-image"></i></button>
-                <button class="compose-tool" onclick="document.getElementById('postVideo').click()" style="background:none;border:none;font-size:24px;cursor:pointer"><i class="fa-solid fa-video"></i></button>
-                <button class="compose-tool" onclick="addPollToCompose()" style="background:none;border:none;font-size:24px;cursor:pointer"><i class="fa-solid fa-chart-simple"></i></button>
-            </div>
-            <input type="file" id="postImage" accept="image/*" style="display:none" onchange="previewMedia(this,'image')">
-            <input type="file" id="postVideo" accept="video/*" style="display:none" onchange="previewMedia(this,'video')">
-            <div id="pollBuilder" style="display:none;margin-bottom:16px">
-                <input type="text" id="pollQuestion" placeholder="سؤال التصويت..." style="width:100%;padding:12px;border-radius:40px;background:rgba(255,255,255,0.1);border:none;margin-bottom:8px;color:white">
-                <input type="text" id="pollOption1" placeholder="خيار 1" style="width:100%;padding:12px;border-radius:40px;background:rgba(255,255,255,0.1);border:none;margin-bottom:4px;color:white">
-                <input type="text" id="pollOption2" placeholder="خيار 2" style="width:100%;padding:12px;border-radius:40px;background:rgba(255,255,255,0.1);border:none;margin-bottom:4px;color:white">
-                <button onclick="addPollOption()" style="margin-top:8px;padding:8px 16px;background:none;border:1px solid #7c3aed;border-radius:40px;color:#7c3aed;cursor:pointer">+ إضافة خيار</button>
-            </div>
-            <button id="publishBtn" onclick="createPost()" style="width:100%;padding:14px;background:linear-gradient(135deg,#7c3aed,#c084fc);border:none;border-radius:60px;color:white;font-weight:700;font-size:16px;cursor:pointer">✨ نشر</button>
         </div>
     </div>
-
+    
+    <!-- Comments Panel -->
+    <div id="commentsPanel" class="chat-panel">
+        <div class="chat-header">
+            <h3 style="font-weight: 700;">💬 التعليقات</h3>
+            <button onclick="closeComments()" style="background: none; border: none; font-size: 24px; cursor: pointer;">&times;</button>
+        </div>
+        <div id="commentsList" class="chat-messages"></div>
+        <div class="chat-input-area">
+            <input type="text" id="commentInput" class="chat-input" placeholder="أضف تعليقاً...">
+            <button onclick="addComment()" class="chat-send-btn"><i class="fa-regular fa-paper-plane"></i></button>
+        </div>
+    </div>
+    
     <!-- Profile Panel -->
     <div id="profilePanel" class="chat-panel">
-        <div class="chat-header" style="padding:20px;border-bottom:1px solid rgba(255,255,255,0.1);display:flex;justify-content:space-between">
-            <h3>👤 الملف الشخصي</h3>
-            <button onclick="closeProfile()" style="background:none;border:none;font-size:28px;color:white;cursor:pointer">&times;</button>
+        <div class="chat-header">
+            <h3 style="font-weight: 700;">👤 الملف الشخصي</h3>
+            <button onclick="closeProfile()" style="background: none; border: none; font-size: 24px; cursor: pointer;">&times;</button>
         </div>
-        <div style="overflow-y:auto">
-            <div id="profileCover" style="height:180px;background:linear-gradient(135deg,#7c3aed,#c084fc);background-size:cover"></div>
-            <div style="margin-top:-50px;padding:0 20px">
-                <div id="profileAvatarLarge" style="width:100px;height:100px;border-radius:50%;border:4px solid #7c3aed;background:linear-gradient(135deg,#7c3aed,#c084fc);overflow:hidden"></div>
+        <div style="overflow-y: auto;">
+            <div id="profileCover" class="profile-cover"></div>
+            <div class="profile-avatar-wrapper">
+                <div class="profile-avatar-large" id="profileAvatarLarge"><i class="fa-solid fa-user text-5xl text-white flex items-center justify-center h-full"></i></div>
             </div>
-            <div style="padding:16px 20px">
-                <div id="profileName" style="font-size:22px;font-weight:800"></div>
-                <div id="profileBio" style="opacity:0.7;margin-top:8px"></div>
-                <div id="profileWebsite" style="color:#7c3aed;margin-top:6px"></div>
-                <div style="display:flex;gap:24px;margin:16px 0;padding:12px 0;border-top:1px solid rgba(255,255,255,0.1);border-bottom:1px solid rgba(255,255,255,0.1)">
-                    <div onclick="openFollowersList('followers')" style="text-align:center;cursor:pointer"><div id="profileFollowersCount" style="font-weight:800;font-size:20px">0</div><div>متابع</div></div>
-                    <div onclick="openFollowersList('following')" style="text-align:center;cursor:pointer"><div id="profileFollowingCount" style="font-weight:800;font-size:20px">0</div><div>يتابع</div></div>
-                    <div style="text-align:center"><div id="profilePostsCount" style="font-weight:800;font-size:20px">0</div><div>منشورات</div></div>
+            <div class="profile-info">
+                <div class="profile-name" id="profileName"></div>
+                <div class="profile-bio" id="profileBio"></div>
+                <div id="profileWebsite" class="profile-bio" style="color: #667eea;"></div>
+                <div class="profile-stats">
+                    <div class="stat-item" onclick="openFollowersList('followers')"><div class="stat-number" id="profileFollowersCount">0</div><div>متابع</div></div>
+                    <div class="stat-item" onclick="openFollowersList('following')"><div class="stat-number" id="profileFollowingCount">0</div><div>يتابع</div></div>
+                    <div class="stat-item"><div class="stat-number" id="profilePostsCount">0</div><div>منشورات</div></div>
+                    <div class="stat-item" onclick="openProfileViews()"><div class="stat-number" id="profileViewsCount">0</div><div>مشاهدة</div></div>
                 </div>
-                <div id="profileButtons" style="display:flex;gap:10px;flex-wrap:wrap"></div>
+                <div id="profileButtons" class="profile-buttons"></div>
             </div>
-            <div id="profilePostsGrid" style="display:grid;grid-template-columns:repeat(3,1fr);gap:3px;margin-top:12px"></div>
+            <div class="profile-tabs">
+                <button class="profile-tab active" onclick="loadProfilePosts(currentProfileUser)"><i class="fa-solid fa-table-cells-large"></i> المنشورات</button>
+                <button class="profile-tab" onclick="loadProfileMedia(currentProfileUser)"><i class="fa-solid fa-clapperboard"></i> الوسائط</button>
+                <button class="profile-tab" onclick="openSavedPosts()"><i class="fa-regular fa-bookmark"></i> المحفوظة</button>
+            </div>
+            <div id="profilePostsGrid" class="profile-grid"></div>
         </div>
     </div>
-
+    
     <!-- Chat Panel -->
     <div id="chatPanel" class="chat-panel">
-        <div class="chat-header" style="padding:20px;border-bottom:1px solid rgba(255,255,255,0.1);display:flex;justify-content:space-between;align-items:center">
-            <div style="display:flex;align-items:center;gap:12px">
-                <div id="chatAvatar" style="width:48px;height:48px;border-radius:50%;background:linear-gradient(135deg,#7c3aed,#c084fc)"></div>
-                <div><h3 id="chatUserName">محادثة</h3><div id="chatLastSeen" style="font-size:11px;opacity:0.6"></div></div>
+        <div class="chat-header">
+            <div style="display: flex; align-items: center; gap: 12px;">
+                <div class="profile-avatar-large" id="chatAvatar" style="width: 44px; height: 44px;"></div>
+                <div>
+                    <h3 id="chatUserName" style="font-weight: 700;">محادثة</h3>
+                    <div id="chatLastSeen" class="last-seen" style="font-size: 10px; color: #9ca3af;"></div>
+                </div>
             </div>
-            <button onclick="closeChat()" style="background:none;border:none;font-size:28px;color:white;cursor:pointer">&times;</button>
+            <div style="display: flex; gap: 12px;">
+                <button class="chat-send-btn" onclick="startVideoCallWithCurrentUser()" style="color: #667eea;"><i class="fa-solid fa-video"></i></button>
+                <button onclick="closeChat()" style="background: none; border: none; font-size: 24px; cursor: pointer;">&times;</button>
+            </div>
         </div>
         <div id="chatMessages" class="chat-messages"></div>
-        <div class="chat-input-area" style="display:flex;gap:12px;padding:16px;border-top:1px solid rgba(255,255,255,0.1)">
-            <button onclick="toggleVoiceRecording()" style="background:none;border:none;font-size:24px;cursor:pointer;color:#7c3aed"><i class="fa-solid fa-microphone"></i></button>
-            <input type="file" id="chatImage" accept="image/*" style="display:none" onchange="sendChatImage(this)">
-            <button onclick="document.getElementById('chatImage').click()" style="background:none;border:none;font-size:24px;cursor:pointer;color:#7c3aed"><i class="fa-regular fa-image"></i></button>
-            <input type="text" id="chatMessageInput" class="chat-input" placeholder="اكتب رسالة..." style="flex:1;padding:12px 18px;background:rgba(255,255,255,0.1);border:none;border-radius:40px;color:white">
-            <button onclick="sendChatMessage()" style="background:none;border:none;font-size:24px;cursor:pointer;color:#7c3aed"><i class="fa-regular fa-paper-plane"></i></button>
+        <div id="typingIndicator" class="typing-indicator" style="display: none;">✏️ جاري الكتابة...</div>
+        <div class="chat-input-area">
+            <button class="chat-send-btn" onclick="toggleVoiceRecording()"><i class="fa-solid fa-microphone"></i></button>
+            <input type="file" id="chatImageInput" accept="image/*" style="display:none" onchange="sendChatImage(this)">
+            <button class="chat-send-btn" onclick="document.getElementById('chatImageInput').click()"><i class="fa-regular fa-image"></i></button>
+            <input type="text" id="chatMessageInput" class="chat-input" placeholder="اكتب رسالة..." onkeyup="onTyping()">
+            <button class="chat-send-btn" onclick="sendChatMessage()"><i class="fa-regular fa-paper-plane"></i></button>
         </div>
-        <div id="typingIndicator" style="display:none;padding:8px 20px;font-size:12px;opacity:0.6">✏️ جاري الكتابة...</div>
     </div>
-
+    
     <!-- Conversations Panel -->
     <div id="conversationsPanel" class="chat-panel">
-        <div class="chat-header" style="padding:20px;border-bottom:1px solid rgba(255,255,255,0.1);display:flex;justify-content:space-between">
-            <h3>💬 الرسائل</h3>
-            <button onclick="closeConversations()" style="background:none;border:none;font-size:28px;color:white;cursor:pointer">&times;</button>
+        <div class="chat-header">
+            <h3 style="font-weight: 700;">💬 الرسائل</h3>
+            <button onclick="closeConversations()" style="background: none; border: none; font-size: 24px; cursor: pointer;">&times;</button>
         </div>
-        <div id="conversationsList" style="padding:16px"></div>
+        <div id="conversationsList" style="padding: 12px;"></div>
     </div>
-
+    
     <!-- Notifications Panel -->
     <div id="notificationsPanel" class="chat-panel">
-        <div class="chat-header" style="padding:20px;border-bottom:1px solid rgba(255,255,255,0.1);display:flex;justify-content:space-between">
-            <h3>🔔 الإشعارات</h3>
-            <button onclick="closeNotifications()" style="background:none;border:none;font-size:28px;color:white;cursor:pointer">&times;</button>
+        <div class="chat-header">
+            <h3 style="font-weight: 700;">🔔 الإشعارات</h3>
+            <button onclick="closeNotifications()" style="background: none; border: none; font-size: 24px; cursor: pointer;">&times;</button>
         </div>
-        <div id="notificationsList" style="padding:16px"></div>
+        <div id="notificationsList" style="padding: 12px;"></div>
     </div>
-
+    
+    <!-- Search Panel -->
+    <div id="searchPanel" class="chat-panel">
+        <div class="chat-header">
+            <h3 style="font-weight: 700;">🔍 بحث</h3>
+            <button onclick="closeSearch()" style="background: none; border: none; font-size: 24px; cursor: pointer;">&times;</button>
+        </div>
+        <input type="text" id="searchInput" class="chat-input" style="margin: 12px; width: calc(100% - 24px);" placeholder="بحث عن مستخدمين أو هاشتاجات..." onkeyup="searchAll()">
+        <div id="searchResults" style="padding: 12px;"></div>
+    </div>
+    
+    <!-- Saved Posts Panel -->
+    <div id="savedPostsPanel" class="chat-panel">
+        <div class="chat-header">
+            <h3 style="font-weight: 700;">📌 المنشورات المحفوظة</h3>
+            <button onclick="closeSavedPosts()" style="background: none; border: none; font-size: 24px; cursor: pointer;">&times;</button>
+        </div>
+        <div id="savedPostsGrid" style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 2px; padding: 8px;"></div>
+    </div>
+    
+    <!-- Profile Views Panel -->
+    <div id="profileViewsPanel" class="chat-panel">
+        <div class="chat-header">
+            <h3 style="font-weight: 700;">👁️ من شاهد ملفك</h3>
+            <button onclick="closeProfileViews()" style="background: none; border: none; font-size: 24px; cursor: pointer;">&times;</button>
+        </div>
+        <div id="profileViewsList" style="padding: 12px;"></div>
+    </div>
+    
+    <!-- Followers Panel -->
+    <div id="followersPanel" class="chat-panel">
+        <div class="chat-header">
+            <h3 id="followersTitle" style="font-weight: 700;">المتابعون</h3>
+            <button onclick="closeFollowers()" style="background: none; border: none; font-size: 24px; cursor: pointer;">&times;</button>
+        </div>
+        <div id="followersList" style="padding: 12px;"></div>
+    </div>
+    
     <!-- Admin Panel -->
     <div id="adminPanel" class="admin-panel">
-        <div class="chat-header" style="padding:20px;border-bottom:1px solid rgba(255,255,255,0.1);display:flex;justify-content:space-between">
-            <h3>🔧 لوحة التحكم - Admin</h3>
-            <button onclick="closeAdmin()" style="background:none;border:none;font-size:28px;color:white;cursor:pointer">&times;</button>
+        <div class="chat-header">
+            <h3 style="font-weight: 700;">🔧 لوحة التحكم</h3>
+            <button onclick="closeAdmin()" style="background: none; border: none; font-size: 24px; cursor: pointer;">&times;</button>
         </div>
         <div class="admin-stats">
-            <div class="admin-stat-card"><div id="adminUsersCount" class="admin-stat-number">0</div><div>مستخدمين</div></div>
-            <div class="admin-stat-card"><div id="adminPostsCount" class="admin-stat-number">0</div><div>منشورات</div></div>
-            <div class="admin-stat-card"><div id="adminCommentsCount" class="admin-stat-number">0</div><div>تعليقات</div></div>
+            <div class="admin-stat-card"><div class="admin-stat-number" id="adminUsersCount">0</div><div>مستخدمين</div></div>
+            <div class="admin-stat-card"><div class="admin-stat-number" id="adminPostsCount">0</div><div>منشورات</div></div>
+            <div class="admin-stat-card"><div class="admin-stat-number" id="adminCommentsCount">0</div><div>تعليقات</div></div>
         </div>
-        <div style="padding:20px">
-            <div style="display:flex;justify-content:space-between;margin-bottom:16px"><h4>🚫 الكلمات الممنوعة</h4><button class="admin-verify-btn" onclick="showAddBadWordModal()" style="background:#10b981;border:none;padding:6px 12px;border-radius:40px;color:white;cursor:pointer">+ إضافة</button></div>
+        <div style="padding: 16px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+                <h4 style="font-weight: 700;"><i class="fa-solid fa-ban"></i> 🚫 الكلمات الممنوعة</h4>
+                <button class="admin-verify-btn" onclick="showAddBadWordModal()">+ إضافة كلمة</button>
+            </div>
             <div id="adminBadWordsList"></div>
         </div>
-        <div style="padding:20px">
-            <h4 style="margin-bottom:16px">👥 إدارة المستخدمين</h4>
+        <div style="padding: 16px;">
+            <h4 style="font-weight: 700; margin-bottom: 12px;"><i class="fa-solid fa-users"></i> إدارة المستخدمين</h4>
             <div id="adminUsersList"></div>
         </div>
-        <div style="padding:20px">
-            <h4 style="margin-bottom:16px">📰 أحدث المنشورات</h4>
+        <div style="padding: 16px;">
+            <h4 style="font-weight: 700; margin-bottom: 12px;"><i class="fa-solid fa-newspaper"></i> أحدث المنشورات</h4>
             <div id="adminPostsList"></div>
         </div>
     </div>
-
+    
     <!-- Edit Profile Modal -->
-    <div id="editProfileModal" class="modal">
+    <div id="editProfileModal" class="modal-overlay">
         <div class="modal-content">
-            <h3 style="margin-bottom:20px">✏️ تعديل الملف الشخصي</h3>
-            <input type="text" id="editName" placeholder="الاسم" style="width:100%;padding:12px;border-radius:40px;background:rgba(255,255,255,0.1);border:none;margin-bottom:12px;color:white">
-            <textarea id="editBio" placeholder="السيرة الذاتية" style="width:100%;padding:12px;border-radius:20px;background:rgba(255,255,255,0.1);border:none;margin-bottom:12px;color:white;min-height:80px"></textarea>
-            <input type="url" id="editWebsite" placeholder="رابط الموقع" style="width:100%;padding:12px;border-radius:40px;background:rgba(255,255,255,0.1);border:none;margin-bottom:20px;color:white">
-            <div style="display:flex;gap:12px">
-                <button onclick="closeEditProfileModal()" style="flex:1;padding:12px;background:none;border:1px solid #7c3aed;border-radius:40px;color:#7c3aed;cursor:pointer">إلغاء</button>
-                <button onclick="saveProfileEdit()" style="flex:1;padding:12px;background:linear-gradient(135deg,#7c3aed,#c084fc);border:none;border-radius:40px;color:white;cursor:pointer">حفظ</button>
+            <h3 style="font-weight: 700; margin-bottom: 16px;">✏️ تعديل الملف الشخصي</h3>
+            <input type="text" id="editName" class="chat-input" style="width: 100%; margin-bottom: 12px;" placeholder="الاسم">
+            <textarea id="editBio" class="chat-input" style="width: 100%; min-height: 80px; margin-bottom: 12px;" placeholder="السيرة الذاتية..."></textarea>
+            <input type="url" id="editWebsite" class="chat-input" style="width: 100%; margin-bottom: 12px;" placeholder="رابط الموقع">
+            <div style="display: flex; gap: 10px;">
+                <button class="profile-btn" onclick="closeEditProfileModal()">إلغاء</button>
+                <button class="profile-btn profile-btn-primary" onclick="saveProfileEdit()">حفظ</button>
             </div>
         </div>
     </div>
-
-    <div id="toast"></div>
-    <div id="recordingIndicator" style="display:none;position:fixed;bottom:100px;left:50%;transform:translateX(-50%);background:#ef4444;padding:10px 20px;border-radius:60px;z-index:1100">🔴 جاري التسجيل...</div>
+    
+    <!-- Report Modal -->
+    <div id="reportModal" class="modal-overlay">
+        <div class="modal-content">
+            <h3 style="font-weight: 700; margin-bottom: 16px;">🚨 الإبلاغ</h3>
+            <div id="reportReasons">
+                <div class="report-reason" onclick="selectReportReason(this, 'محتوى غير لائق')" style="padding: 10px; margin: 5px 0; background: rgba(0, 0, 0, 0.05); border-radius: 8px; cursor: pointer;">محتوى غير لائق</div>
+                <div class="report-reason" onclick="selectReportReason(this, 'تحرش')" style="padding: 10px; margin: 5px 0; background: rgba(0, 0, 0, 0.05); border-radius: 8px; cursor: pointer;">تحرش</div>
+                <div class="report-reason" onclick="selectReportReason(this, 'عنف')" style="padding: 10px; margin: 5px 0; background: rgba(0, 0, 0, 0.05); border-radius: 8px; cursor: pointer;">عنف</div>
+                <div class="report-reason" onclick="selectReportReason(this, 'سب وقذف')" style="padding: 10px; margin: 5px 0; background: rgba(0, 0, 0, 0.05); border-radius: 8px; cursor: pointer;">سب وقذف</div>
+            </div>
+            <button class="profile-btn profile-btn-primary" onclick="submitReport()" style="margin-top: 16px;">إرسال</button>
+            <button class="profile-btn" onclick="closeReportModal()">إلغاء</button>
+        </div>
+    </div>
+    
+    <!-- Image Viewer Modal -->
+    <div id="imageViewerModal" class="image-viewer-modal" onclick="closeImageViewer()">
+        <div class="image-viewer-close" onclick="event.stopPropagation(); closeImageViewer()">
+            <i class="fa-solid fa-xmark"></i>
+        </div>
+        <img id="viewerImage" src="" onclick="event.stopPropagation()">
+    </div>
+    
+    <!-- Video Call Modal -->
+    <div id="videoCallModal" class="video-call-modal">
+        <div class="video-container" style="flex: 1; display: flex; flex-direction: column; position: relative;">
+            <div id="remoteVideo" style="flex: 1; background: #000;"></div>
+            <div id="localVideo" style="width: 120px; height: 180px; position: absolute; bottom: 20px; right: 20px; background: #333; border-radius: 16px; border: 2px solid white;"></div>
+        </div>
+        <div class="call-controls" style="padding: 20px; display: flex; justify-content: center;">
+            <button class="call-end-btn" onclick="endVideoCall()"><i class="fa-solid fa-phone-slash"></i></button>
+        </div>
+    </div>
+    
+    <div id="customToast"></div>
+    <div id="recordingIndicator" class="recording-indicator">🔴 جاري التسجيل...</div>
 </div>
 
 <script src="firebase-config.js"></script>
 <script src="script.js"></script>
+
 </body>
 </html>
