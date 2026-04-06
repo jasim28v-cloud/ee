@@ -1,0 +1,1540 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>ZORAK | منصة اجتماعية عصرية</title>
+    <meta name="theme-color" content="#7c3aed">
+    <meta name="description" content="ZORAK - منصة اجتماعية حديثة تجمع العالم">
+    
+    <!-- Fonts & Icons -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.2/css/all.min.css">
+    
+    <!-- Firebase SDKs -->
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-storage-compat.js"></script>
+    
+    <!-- Agora SDK -->
+    <script src="https://download.agora.io/sdk/release/AgoraRTC_N-4.22.0.js"></script>
+    
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Inter', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            color: #1f2937;
+            transition: all 0.3s ease;
+        }
+        
+        /* Dark Mode */
+        body.dark-mode {
+            background: linear-gradient(135deg, #0f0c29, #302b63, #24243e);
+            color: #f3f4f6;
+        }
+        
+        body.dark-mode .post-card {
+            background: rgba(31, 41, 55, 0.95);
+            backdrop-filter: blur(10px);
+            border-bottom: 1px solid rgba(75, 85, 99, 0.5);
+        }
+        
+        body.dark-mode .top-bar {
+            background: rgba(17, 24, 39, 0.95);
+            backdrop-filter: blur(10px);
+            border-bottom: 1px solid rgba(75, 85, 99, 0.5);
+        }
+        
+        body.dark-mode .bottom-nav {
+            background: rgba(17, 24, 39, 0.95);
+            backdrop-filter: blur(10px);
+            border-top: 1px solid rgba(75, 85, 99, 0.5);
+        }
+        
+        body.dark-mode .compose-content,
+        body.dark-mode .chat-panel,
+        body.dark-mode .modal-content {
+            background: #1f2937;
+            color: #f3f4f6;
+        }
+        
+        body.dark-mode .auth-card {
+            background: rgba(31, 41, 55, 0.95);
+            backdrop-filter: blur(10px);
+        }
+        
+        body.dark-mode .auth-card input {
+            background: #374151;
+            border-color: #4b5563;
+            color: #f3f4f6;
+        }
+        
+        body.dark-mode .message-bubble {
+            background: #374151;
+            color: #f3f4f6;
+        }
+        
+        body.dark-mode .trending-sidebar {
+            background: rgba(31, 41, 55, 0.8);
+            backdrop-filter: blur(10px);
+            border-left: 1px solid rgba(75, 85, 99, 0.5);
+        }
+        
+        /* Animations */
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px) scale(0.95); }
+            to { opacity: 1; transform: translateY(0) scale(1); }
+        }
+        
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+        
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+        
+        @keyframes gradientShift {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
+        
+        @keyframes float {
+            0%, 100% { transform: translateY(0px); }
+            50% { transform: translateY(-10px); }
+        }
+        
+        .fade-in {
+            animation: fadeIn 0.3s ease-out;
+        }
+        
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar {
+            width: 6px;
+        }
+        
+        ::-webkit-scrollbar-track {
+            background: #e5e7eb;
+            border-radius: 10px;
+        }
+        
+        ::-webkit-scrollbar-thumb {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            border-radius: 10px;
+        }
+        
+        body.dark-mode ::-webkit-scrollbar-track {
+            background: #374151;
+        }
+        
+        /* Auth Screen */
+        .auth-screen {
+            position: fixed;
+            inset: 0;
+            z-index: 1000;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+        }
+        
+        body.dark-mode .auth-screen {
+            background: linear-gradient(135deg, #0f0c29, #302b63, #24243e);
+        }
+        
+        /* Main App */
+        #mainApp {
+            display: none;
+            min-height: 100vh;
+            padding-bottom: 70px;
+        }
+        
+        /* Top Bar */
+        .top-bar {
+            position: sticky;
+            top: 0;
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-bottom: 1px solid #e5e7eb;
+            padding: 12px 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            z-index: 100;
+        }
+        
+        .logo {
+            font-size: 28px;
+            font-weight: 900;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            cursor: pointer;
+        }
+        
+        .top-icons {
+            display: flex;
+            gap: 20px;
+            align-items: center;
+        }
+        
+        .top-icon {
+            font-size: 22px;
+            color: #4b5563;
+            cursor: pointer;
+            transition: transform 0.2s;
+        }
+        
+        .top-icon:active {
+            transform: scale(0.95);
+        }
+        
+        body.dark-mode .top-icon {
+            color: #d1d5db;
+        }
+        
+        /* Main Layout */
+        .main-layout {
+            display: flex;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        
+        .feed-container {
+            flex: 1;
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 0 0 20px;
+        }
+        
+        /* Trending Sidebar */
+        .trending-sidebar {
+            width: 280px;
+            position: sticky;
+            top: 70px;
+            height: calc(100vh - 70px);
+            overflow-y: auto;
+            padding: 16px;
+            background: rgba(255, 255, 255, 0.8);
+            backdrop-filter: blur(10px);
+            border-radius: 24px;
+            margin-right: 20px;
+            display: none;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+        
+        @media (min-width: 1024px) {
+            .trending-sidebar {
+                display: block;
+            }
+        }
+        
+        body.dark-mode .trending-sidebar {
+            background: rgba(31, 41, 55, 0.8);
+        }
+        
+        .trending-item {
+            padding: 12px;
+            border-bottom: 1px solid #e5e7eb;
+            cursor: pointer;
+            transition: all 0.2s;
+            border-radius: 12px;
+        }
+        
+        .trending-item:hover {
+            background: rgba(124, 58, 237, 0.1);
+        }
+        
+        .trending-hashtag {
+            font-weight: 600;
+            color: #7c3aed;
+        }
+        
+        /* Post Card */
+        .post-card {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(5px);
+            border-bottom: 1px solid #e5e7eb;
+            margin-bottom: 0;
+            transition: all 0.2s;
+            cursor: pointer;
+            border-radius: 20px;
+            margin: 8px;
+        }
+        
+        .post-card:active {
+            transform: scale(0.99);
+        }
+        
+        .post-card.pinned {
+            border-right: 4px solid #7c3aed;
+        }
+        
+        .pinned-badge {
+            position: absolute;
+            top: 12px;
+            left: 12px;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            padding: 4px 10px;
+            border-radius: 20px;
+            font-size: 10px;
+            font-weight: 600;
+            z-index: 10;
+        }
+        
+        .post-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 12px 16px;
+        }
+        
+        .post-user-info {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            cursor: pointer;
+        }
+        
+        .post-avatar {
+            width: 44px;
+            height: 44px;
+            border-radius: 50%;
+            overflow: hidden;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .post-avatar img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+        
+        .post-username {
+            font-weight: 700;
+            font-size: 15px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        
+        .verified-badge-blue {
+            color: #1D9BF0;
+            font-size: 14px;
+        }
+        
+        .verified-badge-gold {
+            color: #FFD700;
+            font-size: 14px;
+        }
+        
+        .post-time {
+            font-size: 11px;
+            color: #9ca3af;
+            margin-top: 2px;
+        }
+        
+        .post-menu {
+            background: none;
+            border: none;
+            font-size: 18px;
+            cursor: pointer;
+            color: #6b7280;
+            transition: transform 0.2s;
+            padding: 6px;
+        }
+        
+        .post-menu:active {
+            transform: scale(0.9);
+        }
+        
+        .post-image {
+            width: calc(100% - 24px);
+            max-height: 400px;
+            object-fit: cover;
+            cursor: pointer;
+            border-radius: 16px;
+            margin: 8px 12px;
+        }
+        
+        /* Video Container */
+        .video-container {
+            position: relative;
+            background: #000;
+            border-radius: 20px;
+            overflow: hidden;
+            margin: 8px 12px;
+            cursor: pointer;
+        }
+        
+        .post-video {
+            width: 100%;
+            max-height: 450px;
+            object-fit: cover;
+            display: block;
+        }
+        
+        .video-overlay {
+            position: absolute;
+            bottom: 10px;
+            right: 10px;
+            background: rgba(0, 0, 0, 0.6);
+            backdrop-filter: blur(4px);
+            border-radius: 30px;
+            padding: 6px 12px;
+            display: flex;
+            gap: 12px;
+            opacity: 0;
+            transition: opacity 0.2s;
+        }
+        
+        .video-container:hover .video-overlay {
+            opacity: 1;
+        }
+        
+        .video-overlay button {
+            background: none;
+            border: none;
+            color: white;
+            font-size: 14px;
+            cursor: pointer;
+        }
+        
+        .video-overlay button:hover {
+            color: #7c3aed;
+        }
+        
+        /* Media Viewer */
+        .media-viewer {
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.85);
+            backdrop-filter: blur(20px);
+            z-index: 1000;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.3s ease;
+        }
+        
+        .media-viewer.open {
+            opacity: 1;
+            visibility: visible;
+        }
+        
+        .media-viewer-content {
+            max-width: 90%;
+            max-height: 90%;
+            animation: zoomIn 0.2s ease-out;
+        }
+        
+        .media-viewer-content img,
+        .media-viewer-content video {
+            max-width: 100%;
+            max-height: 90vh;
+            object-fit: contain;
+            border-radius: 20px;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+        }
+        
+        .media-viewer-close {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            width: 44px;
+            height: 44px;
+            background: rgba(255, 255, 255, 0.2);
+            backdrop-filter: blur(10px);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            color: white;
+            font-size: 24px;
+            transition: all 0.2s;
+        }
+        
+        @keyframes zoomIn {
+            from { opacity: 0; transform: scale(0.9); }
+            to { opacity: 1; transform: scale(1); }
+        }
+        
+        .post-actions {
+            display: flex;
+            gap: 24px;
+            padding: 8px 16px;
+        }
+        
+        .post-action {
+            background: none;
+            border: none;
+            font-size: 22px;
+            cursor: pointer;
+            color: #6b7280;
+            transition: transform 0.2s;
+        }
+        
+        .post-action:active {
+            transform: scale(0.9);
+        }
+        
+        .post-action.active {
+            color: #ef4444;
+        }
+        
+        .post-likes {
+            font-weight: 600;
+            font-size: 13px;
+            padding: 0 16px 4px;
+        }
+        
+        .post-caption {
+            padding: 0 16px 8px;
+            font-size: 14px;
+        }
+        
+        .post-caption span {
+            font-weight: 700;
+            cursor: pointer;
+        }
+        
+        .post-hashtags {
+            color: #7c3aed;
+            cursor: pointer;
+        }
+        
+        .post-comments {
+            padding: 0 16px 8px;
+            font-size: 13px;
+            color: #9ca3af;
+            cursor: pointer;
+        }
+        
+        .post-views {
+            padding: 0 16px 12px;
+            font-size: 11px;
+            color: #9ca3af;
+        }
+        
+        /* Poll */
+        .poll-container {
+            background: #f3f4f6;
+            border-radius: 16px;
+            padding: 12px;
+            margin: 8px 12px;
+        }
+        
+        .poll-option {
+            background: white;
+            border-radius: 12px;
+            padding: 10px;
+            margin: 8px 0;
+            cursor: pointer;
+            transition: all 0.2s;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .poll-option:hover {
+            background: rgba(124, 58, 237, 0.1);
+        }
+        
+        .poll-option.selected {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+        }
+        
+        .poll-progress {
+            position: absolute;
+            left: 0;
+            top: 0;
+            height: 100%;
+            background: rgba(124, 58, 237, 0.2);
+            transition: width 0.3s;
+            z-index: 0;
+        }
+        
+        .poll-option-text {
+            position: relative;
+            z-index: 1;
+            display: flex;
+            justify-content: space-between;
+        }
+        
+        /* Quote Post */
+        .quote-post {
+            background: #f3f4f6;
+            border-radius: 16px;
+            padding: 12px;
+            margin: 8px 12px;
+            border-right: 4px solid #7c3aed;
+            cursor: pointer;
+        }
+        
+        /* Compose Modal */
+        .compose-modal {
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.9);
+            z-index: 200;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.2s;
+        }
+        
+        .compose-modal.open {
+            opacity: 1;
+            visibility: visible;
+        }
+        
+        .compose-content {
+            background: white;
+            border-radius: 24px;
+            width: 90%;
+            max-width: 500px;
+            max-height: 80vh;
+            overflow-y: auto;
+        }
+        
+        .compose-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 16px;
+            border-bottom: 1px solid #e5e7eb;
+        }
+        
+        .compose-textarea {
+            width: 100%;
+            min-height: 120px;
+            border: none;
+            resize: none;
+            font-size: 16px;
+            outline: none;
+            font-family: 'Inter', sans-serif;
+            padding: 16px;
+        }
+        
+        .compose-tools {
+            display: flex;
+            gap: 16px;
+            padding: 12px 16px;
+            border-top: 1px solid #e5e7eb;
+        }
+        
+        .compose-tool {
+            background: none;
+            border: none;
+            font-size: 24px;
+            cursor: pointer;
+            color: #6b7280;
+        }
+        
+        /* Progress Bar */
+        .upload-progress {
+            margin: 12px;
+            display: none;
+        }
+        
+        .upload-progress.active {
+            display: block;
+        }
+        
+        .progress-bar {
+            width: 100%;
+            height: 6px;
+            background: #e5e7eb;
+            border-radius: 10px;
+            overflow: hidden;
+        }
+        
+        .progress-fill {
+            width: 0%;
+            height: 100%;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            border-radius: 10px;
+            transition: width 0.3s;
+        }
+        
+        /* Bottom Navigation */
+        .bottom-nav {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-top: 1px solid #e5e7eb;
+            display: flex;
+            justify-content: space-around;
+            padding: 10px 0 14px;
+            z-index: 100;
+        }
+        
+        .nav-item {
+            background: none;
+            border: none;
+            font-size: 24px;
+            color: #6b7280;
+            cursor: pointer;
+            transition: transform 0.2s;
+            padding: 6px;
+        }
+        
+        .nav-item:active {
+            transform: scale(0.9);
+        }
+        
+        .nav-item.active {
+            color: #7c3aed;
+        }
+        
+        /* Chat Panel */
+        .chat-panel {
+            position: fixed;
+            inset: 0;
+            background: white;
+            z-index: 400;
+            transform: translateX(100%);
+            transition: transform 0.3s ease;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .chat-panel.open {
+            transform: translateX(0);
+        }
+        
+        .chat-header {
+            padding: 16px;
+            border-bottom: 1px solid #e5e7eb;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .chat-messages {
+            flex: 1;
+            overflow-y: auto;
+            padding: 16px;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+        
+        .chat-message {
+            display: flex;
+            gap: 8px;
+            max-width: 80%;
+        }
+        
+        .chat-message.sent {
+            align-self: flex-end;
+            flex-direction: row-reverse;
+        }
+        
+        .message-bubble {
+            background: #f3f4f6;
+            padding: 10px 14px;
+            border-radius: 20px;
+            font-size: 14px;
+        }
+        
+        .message-bubble.sent {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+        }
+        
+        .chat-input-area {
+            display: flex;
+            gap: 12px;
+            padding: 12px;
+            border-top: 1px solid #e5e7eb;
+            align-items: center;
+        }
+        
+        .chat-input {
+            flex: 1;
+            padding: 10px 14px;
+            border: 1px solid #e5e7eb;
+            border-radius: 25px;
+            outline: none;
+            font-size: 14px;
+            font-family: 'Inter', sans-serif;
+        }
+        
+        .chat-send-btn {
+            background: none;
+            border: none;
+            font-size: 22px;
+            cursor: pointer;
+            color: #7c3aed;
+        }
+        
+        /* Recording Indicator */
+        .recording-indicator {
+            position: fixed;
+            bottom: 100px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: #ef4444;
+            color: white;
+            padding: 8px 16px;
+            border-radius: 40px;
+            z-index: 1100;
+            font-size: 14px;
+            display: none;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        /* Admin Panel */
+        .admin-panel {
+            position: fixed;
+            inset: 0;
+            background: white;
+            z-index: 500;
+            transform: translateX(100%);
+            transition: transform 0.3s ease;
+            overflow-y: auto;
+        }
+        
+        .admin-panel.open {
+            transform: translateX(0);
+        }
+        
+        .admin-stats {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 12px;
+            padding: 16px;
+        }
+        
+        .admin-stat-card {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            padding: 16px;
+            border-radius: 16px;
+            text-align: center;
+            color: white;
+        }
+        
+        .admin-stat-number {
+            font-size: 28px;
+            font-weight: 700;
+        }
+        
+        .admin-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px;
+            border-bottom: 1px solid #e5e7eb;
+        }
+        
+        .admin-delete-btn,
+        .admin-mute-btn,
+        .admin-verify-btn {
+            padding: 6px 12px;
+            border-radius: 8px;
+            border: none;
+            cursor: pointer;
+            margin: 0 4px;
+            font-size: 12px;
+        }
+        
+        .admin-delete-btn { background: #ef4444; color: white; }
+        .admin-mute-btn { background: #f59e0b; color: white; }
+        .admin-verify-blue { background: #1D9BF0; color: white; }
+        .admin-verify-gold { background: #FFD700; color: black; }
+        
+        /* Profile */
+        .profile-cover {
+            width: 100%;
+            height: 180px;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            background-size: cover;
+            background-position: center;
+            cursor: pointer;
+        }
+        
+        .profile-avatar-wrapper {
+            position: relative;
+            margin-top: -50px;
+            padding: 0 16px;
+        }
+        
+        .profile-avatar-large {
+            width: 100px;
+            height: 100px;
+            border-radius: 50%;
+            overflow: hidden;
+            border: 4px solid white;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            cursor: pointer;
+        }
+        
+        .profile-info {
+            padding: 12px 16px 16px;
+        }
+        
+        .profile-name {
+            font-size: 20px;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+        
+        .profile-stats {
+            display: flex;
+            gap: 24px;
+            margin-top: 12px;
+            padding: 12px 0;
+            border-top: 1px solid #e5e7eb;
+            border-bottom: 1px solid #e5e7eb;
+        }
+        
+        .stat-item {
+            text-align: center;
+            cursor: pointer;
+        }
+        
+        .stat-number {
+            font-weight: 700;
+            font-size: 18px;
+        }
+        
+        .profile-buttons {
+            display: flex;
+            gap: 10px;
+            margin-top: 16px;
+            flex-wrap: wrap;
+        }
+        
+        .profile-btn {
+            flex: 1;
+            padding: 8px;
+            border-radius: 12px;
+            font-weight: 600;
+            font-size: 14px;
+            cursor: pointer;
+            border: 1px solid #e5e7eb;
+            background: none;
+            transition: all 0.2s;
+        }
+        
+        .profile-btn-primary {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            border: none;
+        }
+        
+        .profile-logout-btn {
+            background: #ef4444;
+            color: white;
+            border: none;
+        }
+        
+        .profile-tabs {
+            display: flex;
+            margin-top: 8px;
+        }
+        
+        .profile-tab {
+            flex: 1;
+            text-align: center;
+            padding: 12px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 600;
+            color: #9ca3af;
+            background: none;
+            border: none;
+        }
+        
+        .profile-tab.active {
+            color: #7c3aed;
+            border-bottom: 2px solid #7c3aed;
+        }
+        
+        .profile-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 2px;
+            margin-top: 8px;
+        }
+        
+        .grid-item {
+            aspect-ratio: 1;
+            overflow: hidden;
+            cursor: pointer;
+            position: relative;
+        }
+        
+        .grid-item img,
+        .grid-item video {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+        
+        .grid-item-overlay {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: rgba(0, 0, 0, 0.6);
+            color: white;
+            display: flex;
+            justify-content: center;
+            gap: 16px;
+            padding: 4px;
+            font-size: 12px;
+        }
+        
+        /* Loading */
+        .loading {
+            text-align: center;
+            padding: 60px 20px;
+        }
+        
+        .spinner {
+            width: 32px;
+            height: 32px;
+            border: 3px solid #e5e7eb;
+            border-top-color: #7c3aed;
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+            margin: 0 auto 12px;
+        }
+        
+        .load-more-btn {
+            text-align: center;
+            padding: 16px;
+            margin: 16px;
+            background: rgba(124, 58, 237, 0.1);
+            border-radius: 30px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        
+        /* Toast */
+        #customToast {
+            position: fixed;
+            bottom: 80px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: #1f2937;
+            color: white;
+            padding: 10px 20px;
+            border-radius: 40px;
+            z-index: 1100;
+            font-size: 13px;
+            opacity: 0;
+            transition: opacity 0.2s;
+            pointer-events: none;
+            white-space: nowrap;
+        }
+        
+        body.dark-mode #customToast {
+            background: #374151;
+        }
+        
+        /* Modal */
+        .modal-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.9);
+            z-index: 600;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.2s;
+        }
+        
+        .modal-overlay.open {
+            opacity: 1;
+            visibility: visible;
+        }
+        
+        .modal-content {
+            background: white;
+            border-radius: 24px;
+            padding: 24px;
+            width: 90%;
+            max-width: 400px;
+        }
+        
+        /* Heart Animation */
+        .heart-animation {
+            position: fixed;
+            font-size: 48px;
+            color: #ef4444;
+            pointer-events: none;
+            z-index: 1000;
+            animation: fadeIn 0.6s ease-out forwards;
+        }
+        
+        /* Follower Item */
+        .follower-item {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 12px;
+            cursor: pointer;
+            transition: all 0.2s;
+            border-bottom: 1px solid #e5e7eb;
+        }
+        
+        .follower-item:active {
+            transform: scale(0.98);
+        }
+        
+        /* Toggle Switch */
+        .toggle-switch {
+            width: 50px;
+            height: 24px;
+            background: #d1d5db;
+            border-radius: 24px;
+            cursor: pointer;
+            position: relative;
+            transition: all 0.2s;
+        }
+        
+        .toggle-switch.active {
+            background: #7c3aed;
+        }
+        
+        .toggle-switch::after {
+            content: '';
+            width: 20px;
+            height: 20px;
+            background: white;
+            border-radius: 50%;
+            position: absolute;
+            top: 2px;
+            left: 4px;
+            transition: all 0.2s;
+        }
+        
+        .toggle-switch.active::after {
+            left: 26px;
+        }
+        
+        /* Video Call */
+        .video-call-modal {
+            position: fixed;
+            inset: 0;
+            background: #000;
+            z-index: 700;
+            display: flex;
+            flex-direction: column;
+            opacity: 0;
+            visibility: hidden;
+        }
+        
+        .video-call-modal.open {
+            opacity: 1;
+            visibility: visible;
+        }
+        
+        #remoteVideo {
+            flex: 1;
+            background: #000;
+        }
+        
+        #localVideo {
+            width: 120px;
+            height: 180px;
+            position: absolute;
+            bottom: 20px;
+            right: 20px;
+            background: #333;
+            border-radius: 16px;
+            border: 2px solid white;
+        }
+        
+        .call-end-btn {
+            background: #ef4444;
+            color: white;
+            border: none;
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            font-size: 24px;
+            cursor: pointer;
+        }
+        
+        /* Quick Emojis */
+        .quick-emojis {
+            display: flex;
+            gap: 8px;
+            padding: 8px 16px;
+            border-top: 1px solid #e5e7eb;
+        }
+        
+        .quick-emojis span {
+            font-size: 20px;
+            cursor: pointer;
+        }
+        
+        /* Responsive */
+        @media (max-width: 768px) {
+            .logo {
+                font-size: 24px;
+            }
+        }
+    </style>
+</head>
+<body>
+
+<!-- Loading Screen -->
+<div id="initLoader" style="position: fixed; inset: 0; background: linear-gradient(135deg, #667eea, #764ba2); z-index: 9999; display: flex; align-items: center; justify-content: center; flex-direction: column;">
+    <div class="spinner"></div>
+    <div style="margin-top: 16px; color: white; font-weight: 500;">جاري تحميل ZORAK...</div>
+</div>
+
+<!-- Main App -->
+<div id="mainApp">
+    <!-- Top Bar -->
+    <div class="top-bar">
+        <div class="logo" onclick="goToHome()">ZORAK</div>
+        <div class="top-icons">
+            <i class="fa-regular fa-message top-icon" onclick="openConversations()"></i>
+            <i class="fa-regular fa-bookmark top-icon" onclick="openSavedPosts()"></i>
+            <i class="fa-solid fa-moon top-icon" onclick="toggleTheme()" id="themeToggle"></i>
+            <i class="fa-solid fa-right-from-bracket top-icon" onclick="logout()" style="color: #ef4444;"></i>
+        </div>
+    </div>
+    
+    <div class="main-layout">
+        <div id="feedContainer" class="feed-container">
+            <div class="loading"><div class="spinner"></div><span>جاري التحميل...</span></div>
+        </div>
+        <div class="trending-sidebar" id="trendingSidebar">
+            <div style="font-weight: 700; margin-bottom: 16px; font-size: 18px;">🔥 الترند</div>
+            <div id="trendingList"></div>
+            <div style="margin-top: 20px; padding-top: 16px; border-top: 1px solid #e5e7eb;">
+                <div style="font-weight: 600; margin-bottom: 12px;">⚙️ الإعدادات</div>
+                <div style="display: flex; justify-content: space-between; margin-bottom: 12px;">
+                    <span>📖 وضع القراءة</span>
+                    <div class="toggle-switch" id="readModeToggle" onclick="toggleReadMode()"></div>
+                </div>
+                <div style="display: flex; justify-content: space-between; margin-bottom: 12px;">
+                    <span>🔕 عدم الإزعاج</span>
+                    <div class="toggle-switch" id="dndToggle" onclick="toggleDoNotDisturb()"></div>
+                </div>
+                <div style="display: flex; justify-content: space-between;">
+                    <span>🔒 إخفاء الإعجابات</span>
+                    <div class="toggle-switch" id="hideLikesToggle" onclick="toggleHideLikes()"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="bottom-nav">
+        <button class="nav-item active" onclick="switchTab('home')"><i class="fa-solid fa-house"></i></button>
+        <button class="nav-item" onclick="openSearch()"><i class="fa-solid fa-magnifying-glass"></i></button>
+        <button class="nav-item" onclick="openCompose()"><i class="fa-regular fa-square-plus"></i></button>
+        <button class="nav-item" onclick="openNotifications()"><i class="fa-regular fa-bell"></i></button>
+        <button class="nav-item" onclick="openMyProfile()"><i class="fa-regular fa-circle-user"></i></button>
+    </div>
+    
+    <!-- Compose Modal -->
+    <div id="composeModal" class="compose-modal">
+        <div class="compose-content">
+            <div class="compose-header">
+                <h3 style="font-weight: 700;">إنشاء منشور جديد</h3>
+                <button onclick="closeCompose()" style="background: none; border: none; font-size: 24px; cursor: pointer;">&times;</button>
+            </div>
+            <div class="compose-area">
+                <textarea id="postText" class="compose-textarea" placeholder="اكتب منشوراً..."></textarea>
+                <div id="mediaPreview" class="media-preview" style="display: none;"></div>
+                <div id="uploadProgress" class="upload-progress">
+                    <div class="progress-bar">
+                        <div class="progress-fill" id="progressFill"></div>
+                    </div>
+                </div>
+                <div class="quick-emojis">
+                    <span onclick="addEmojiToPost('😊')">😊</span>
+                    <span onclick="addEmojiToPost('😂')">😂</span>
+                    <span onclick="addEmojiToPost('❤️')">❤️</span>
+                    <span onclick="addEmojiToPost('🔥')">🔥</span>
+                    <span onclick="addEmojiToPost('🎉')">🎉</span>
+                    <span onclick="addEmojiToPost('😢')">😢</span>
+                </div>
+                <div class="compose-tools">
+                    <button class="compose-tool" onclick="document.getElementById('postImage').click()"><i class="fa-regular fa-image"></i></button>
+                    <button class="compose-tool" onclick="document.getElementById('postVideo').click()"><i class="fa-solid fa-video"></i></button>
+                    <button class="compose-tool" onclick="addPollToCompose()"><i class="fa-solid fa-chart-simple"></i></button>
+                </div>
+                <input type="file" id="postImage" accept="image/*" style="display:none" onchange="previewMedia(this, 'image')">
+                <input type="file" id="postVideo" accept="video/*" style="display:none" onchange="previewMedia(this, 'video')">
+                <div id="pollBuilder" style="display: none; margin: 12px;">
+                    <input type="text" id="pollQuestion" placeholder="سؤال التصويت..." class="chat-input" style="width: 100%; margin-bottom: 8px;">
+                    <input type="text" id="pollOption1" placeholder="خيار 1" class="chat-input" style="width: 100%; margin-bottom: 4px;">
+                    <input type="text" id="pollOption2" placeholder="خيار 2" class="chat-input" style="width: 100%; margin-bottom: 4px;">
+                    <button onclick="addPollOption()" style="background: none; border: 1px solid #7c3aed; color: #7c3aed; padding: 4px 8px; border-radius: 8px;">+ إضافة خيار</button>
+                </div>
+                <button id="publishPostBtn" onclick="createPost()" style="width: 100%; background: linear-gradient(135deg, #667eea, #764ba2); color: white; padding: 14px; border-radius: 16px; margin-top: 16px; font-weight: 700; border: none; cursor: pointer;">✨ نشر</button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Comments Panel -->
+    <div id="commentsPanel" class="chat-panel">
+        <div class="chat-header">
+            <h3 style="font-weight: 700;">💬 التعليقات</h3>
+            <button onclick="closeComments()" style="background: none; border: none; font-size: 24px; cursor: pointer;">&times;</button>
+        </div>
+        <div id="commentsList" class="chat-messages"></div>
+        <div class="chat-input-area">
+            <input type="text" id="commentInput" class="chat-input" placeholder="أضف تعليقاً...">
+            <button onclick="addComment()" class="chat-send-btn"><i class="fa-regular fa-paper-plane"></i></button>
+        </div>
+    </div>
+    
+    <!-- Profile Panel -->
+    <div id="profilePanel" class="chat-panel">
+        <div class="chat-header">
+            <h3 style="font-weight: 700;">👤 الملف الشخصي</h3>
+            <button onclick="closeProfile()" style="background: none; border: none; font-size: 24px; cursor: pointer;">&times;</button>
+        </div>
+        <div style="overflow-y: auto;">
+            <div id="profileCover" class="profile-cover"></div>
+            <div class="profile-avatar-wrapper">
+                <div class="profile-avatar-large" id="profileAvatarLarge"><i class="fa-solid fa-user text-5xl text-white flex items-center justify-center h-full"></i></div>
+            </div>
+            <div class="profile-info">
+                <div class="profile-name" id="profileName"></div>
+                <div class="profile-bio" id="profileBio"></div>
+                <div id="profileWebsite" class="profile-bio" style="color: #7c3aed;"></div>
+                <div class="profile-stats">
+                    <div class="stat-item" onclick="openFollowersList('followers')">
+                        <div class="stat-number" id="profileFollowersCount">0</div>
+                        <div>متابع</div>
+                    </div>
+                    <div class="stat-item" onclick="openFollowersList('following')">
+                        <div class="stat-number" id="profileFollowingCount">0</div>
+                        <div>يتابع</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-number" id="profilePostsCount">0</div>
+                        <div>منشورات</div>
+                    </div>
+                    <div class="stat-item" onclick="openProfileViews()">
+                        <div class="stat-number" id="profileViewsCount">0</div>
+                        <div>مشاهدة</div>
+                    </div>
+                </div>
+                <div id="profileButtons" class="profile-buttons"></div>
+            </div>
+            <div class="profile-tabs">
+                <button class="profile-tab active" onclick="loadProfilePosts(currentProfileUser)"><i class="fa-solid fa-table-cells-large"></i> المنشورات</button>
+                <button class="profile-tab" onclick="loadProfileMedia(currentProfileUser)"><i class="fa-solid fa-clapperboard"></i> الوسائط</button>
+                <button class="profile-tab" onclick="openSavedPosts()"><i class="fa-regular fa-bookmark"></i> المحفوظة</button>
+            </div>
+            <div id="profilePostsGrid" class="profile-grid"></div>
+        </div>
+    </div>
+    
+    <!-- Chat Panel -->
+    <div id="chatPanel" class="chat-panel">
+        <div class="chat-header">
+            <div style="display: flex; align-items: center; gap: 12px;">
+                <div class="profile-avatar-large" id="chatAvatar" style="width: 44px; height: 44px;"></div>
+                <div>
+                    <h3 id="chatUserName" style="font-weight: 700;">محادثة</h3>
+                    <div id="chatLastSeen" class="last-seen" style="font-size: 10px; color: #9ca3af;"></div>
+                </div>
+            </div>
+            <div style="display: flex; gap: 12px;">
+                <button class="chat-send-btn" onclick="startVideoCallWithCurrentUser()" style="color: #7c3aed;"><i class="fa-solid fa-video"></i></button>
+                <button class="chat-send-btn" id="voiceRecordBtn" onclick="toggleVoiceRecording()"><i class="fa-solid fa-microphone"></i></button>
+                <button onclick="closeChat()" style="background: none; border: none; font-size: 24px; cursor: pointer;">&times;</button>
+            </div>
+        </div>
+        <div id="chatMessages" class="chat-messages"></div>
+        <div id="typingIndicator" class="typing-indicator" style="display: none; padding: 8px 16px; font-size: 12px; color: #9ca3af;">✏️ جاري الكتابة...</div>
+        <div class="chat-input-area">
+            <input type="file" id="chatImageInput" accept="image/*" style="display:none" onchange="sendChatImage(this)">
+            <button class="chat-send-btn" onclick="document.getElementById('chatImageInput').click()"><i class="fa-regular fa-image"></i></button>
+            <input type="text" id="chatMessageInput" class="chat-input" placeholder="اكتب رسالة..." onkeyup="onTyping()">
+            <button class="chat-send-btn" onclick="sendChatMessage()"><i class="fa-regular fa-paper-plane"></i></button>
+        </div>
+    </div>
+    
+    <!-- Conversations Panel -->
+    <div id="conversationsPanel" class="chat-panel">
+        <div class="chat-header">
+            <h3 style="font-weight: 700;">💬 الرسائل</h3>
+            <button onclick="closeConversations()" style="background: none; border: none; font-size: 24px; cursor: pointer;">&times;</button>
+        </div>
+        <div id="conversationsList" style="padding: 12px;"></div>
+    </div>
+    
+    <!-- Notifications Panel -->
+    <div id="notificationsPanel" class="chat-panel">
+        <div class="chat-header">
+            <h3 style="font-weight: 700;">🔔 الإشعارات</h3>
+            <button onclick="closeNotifications()" style="background: none; border: none; font-size: 24px; cursor: pointer;">&times;</button>
+        </div>
+        <div id="notificationsList" style="padding: 12px;"></div>
+    </div>
+    
+    <!-- Search Panel -->
+    <div id="searchPanel" class="chat-panel">
+        <div class="chat-header">
+            <h3 style="font-weight: 700;">🔍 بحث</h3>
+            <button onclick="closeSearch()" style="background: none; border: none; font-size: 24px; cursor: pointer;">&times;</button>
+        </div>
+        <input type="text" id="searchInput" class="chat-input" style="margin: 12px; width: calc(100% - 24px);" placeholder="بحث عن مستخدمين أو هاشتاجات..." onkeyup="searchAll()">
+        <div id="searchResults" style="padding: 12px;"></div>
+    </div>
+    
+    <!-- Saved Posts Panel -->
+    <div id="savedPostsPanel" class="chat-panel">
+        <div class="chat-header">
+            <h3 style="font-weight: 700;">📌 المنشورات المحفوظة</h3>
+            <button onclick="closeSavedPosts()" style="background: none; border: none; font-size: 24px; cursor: pointer;">&times;</button>
+        </div>
+        <div id="savedPostsGrid" style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 2px; padding: 8px;"></div>
+    </div>
+    
+    <!-- Profile Views Panel -->
+    <div id="profileViewsPanel" class="chat-panel">
+        <div class="chat-header">
+            <h3 style="font-weight: 700;">👁️ من شاهد ملفك</h3>
+            <button onclick="closeProfileViews()" style="background: none; border: none; font-size: 24px; cursor: pointer;">&times;</button>
+        </div>
+        <div id="profileViewsList" style="padding: 12px;"></div>
+    </div>
+    
+    <!-- Followers Panel -->
+    <div id="followersPanel" class="chat-panel">
+        <div class="chat-header">
+            <h3 id="followersTitle" style="font-weight: 700;">المتابعون</h3>
+            <button onclick="closeFollowers()" style="background: none; border: none; font-size: 24px; cursor: pointer;">&times;</button>
+        </div>
+        <div id="followersList" style="padding: 12px;"></div>
+    </div>
+    
+    <!-- Admin Panel -->
+    <div id="adminPanel" class="admin-panel">
+        <div class="chat-header">
+            <h3 style="font-weight: 700;">🔧 لوحة التحكم</h3>
+            <button onclick="closeAdmin()" style="background: none; border: none; font-size: 24px; cursor: pointer;">&times;</button>
+        </div>
+        <div class="admin-stats">
+            <div class="admin-stat-card"><div class="admin-stat-number" id="adminUsersCount">0</div><div>مستخدمين</div></div>
+            <div class="admin-stat-card"><div class="admin-stat-number" id="adminPostsCount">0</div><div>منشورات</div></div>
+            <div class="admin-stat-card"><div class="admin-stat-number" id="adminCommentsCount">0</div><div>تعليقات</div></div>
+        </div>
+        <div style="padding: 16px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+                <h4 style="font-weight: 700;"><i class="fa-solid fa-ban"></i> 🚫 الكلمات الممنوعة</h4>
+                <button class="admin-verify-blue" onclick="showAddBadWordModal()">+ إضافة كلمة</button>
+            </div>
+            <div id="adminBadWordsList"></div>
+        </div>
+        <div style="padding: 16px;">
+            <h4 style="font-weight: 700; margin-bottom: 12px;"><i class="fa-solid fa-users"></i> إدارة المستخدمين</h4>
+            <div id="adminUsersList"></div>
+        </div>
+        <div style="padding: 16px;">
+            <h4 style="font-weight: 700; margin-bottom: 12px;"><i class="fa-solid fa-newspaper"></i> أحدث المنشورات</h4>
+            <div id="adminPostsList"></div>
+        </div>
+    </div>
+    
+    <!-- Edit Profile Modal -->
+    <div id="editProfileModal" class="modal-overlay">
+        <div class="modal-content">
+            <h3 style="font-weight: 700; margin-bottom: 16px;">✏️ تعديل الملف الشخصي</h3>
+            <input type="text" id="editName" class="chat-input" style="width: 100%; margin-bottom: 12px;" placeholder="الاسم">
+            <textarea id="editBio" class="chat-input" style="width: 100%; min-height: 80px; margin-bottom: 12px;" placeholder="السيرة الذاتية..."></textarea>
+            <input type="url" id="editWebsite" class="chat-input" style="width: 100%; margin-bottom: 12px;" placeholder="رابط الموقع">
+            <div style="display: flex; gap: 10px;">
+                <button class="profile-btn" onclick="closeEditProfileModal()">إلغاء</button>
+                <button class="profile-btn profile-btn-primary" onclick="saveProfileEdit()">حفظ</button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Report Modal -->
+    <div id="reportModal" class="modal-overlay">
+        <div class="modal-content">
+            <h3 style="font-weight: 700; margin-bottom: 16px;">🚨 الإبلاغ</h3>
+            <div id="reportReasons">
+                <div class="report-reason" onclick="selectReportReason(this, 'محتوى غير لائق')" style="padding: 10px; margin: 5px 0; background: #f3f4f6; border-radius: 8px; cursor: pointer;">محتوى غير لائق</div>
+                <div class="report-reason" onclick="selectReportReason(this, 'تحرش')" style="padding: 10px; margin: 5px 0; background: #f3f4f6; border-radius: 8px; cursor: pointer;">تحرش</div>
+                <div class="report-reason" onclick="selectReportReason(this, 'عنف')" style="padding: 10px; margin: 5px 0; background: #f3f4f6; border-radius: 8px; cursor: pointer;">عنف</div>
+                <div class="report-reason" onclick="selectReportReason(this, 'سب وقذف')" style="padding: 10px; margin: 5px 0; background: #f3f4f6; border-radius: 8px; cursor: pointer;">سب وقذف</div>
+            </div>
+            <button class="profile-btn profile-btn-primary" onclick="submitReport()" style="margin-top: 16px;">إرسال</button>
+            <button class="profile-btn" onclick="closeReportModal()">إلغاء</button>
+        </div>
+    </div>
+    
+    <!-- Media Viewer -->
+    <div id="mediaViewer" class="media-viewer" onclick="closeMediaViewer()">
+        <div class="media-viewer-close" onclick="closeMediaViewer()">
+            <i class="fa-solid fa-xmark"></i>
+        </div>
+        <div class="media-viewer-content" onclick="event.stopPropagation()">
+            <img id="viewerImage" src="" style="display: none;">
+            <video id="viewerVideo" src="" controls style="display: none;"></video>
+        </div>
+    </div>
+    
+    <!-- Video Call Modal -->
+    <div id="videoCallModal" class="video-call-modal">
+        <div class="video-container" style="flex: 1; display: flex; flex-direction: column; position: relative;">
+            <div id="remoteVideo" style="flex: 1; background: #000;"></div>
+            <div id="localVideo" style="width: 120px; height: 180px; position: absolute; bottom: 20px; right: 20px; background: #333; border-radius: 16px; border: 2px solid white;"></div>
+        </div>
+        <div class="call-controls" style="padding: 20px; display: flex; justify-content: center;">
+            <button class="call-end-btn" onclick="endVideoCall()"><i class="fa-solid fa-phone-slash"></i></button>
+        </div>
+    </div>
+    
+    <!-- Recording Indicator -->
+    <div id="recordingIndicator" class="recording-indicator">
+        <i class="fa-solid fa-circle" style="font-size: 12px; animation: pulse 1s infinite;"></i>
+        <span>جاري التسجيل...</span>
+    </div>
+    
+    <!-- Toast -->
+    <div id="customToast"></div>
+</div>
+
+<script src="firebase-config.js"></script>
+<script src="script.js"></script>
+
+</body>
+</html>
