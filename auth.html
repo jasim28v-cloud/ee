@@ -281,7 +281,7 @@
             <div id="loginForm" class="auth-form active">
                 <div class="input-group">
                     <i class="fa-regular fa-envelope"></i>
-                    <input type="text" id="loginInput" placeholder="البريد الإلكتروني أو اسم المستخدم">
+                    <input type="text" id="loginEmail" placeholder="البريد الإلكتروني">
                 </div>
                 <div class="input-group">
                     <i class="fa-regular fa-lock"></i>
@@ -362,11 +362,11 @@
         }
         
         async function login() {
-            const input = document.getElementById('loginInput').value;
+            const email = document.getElementById('loginEmail').value;
             const password = document.getElementById('loginPassword').value;
             const msgDiv = document.getElementById('loginMsg');
             
-            if (!input || !password) {
+            if (!email || !password) {
                 msgDiv.textContent = 'الرجاء إدخال جميع الحقول';
                 return;
             }
@@ -374,16 +374,6 @@
             msgDiv.innerHTML = '<div class="spinner"></div> جاري تسجيل الدخول...';
             
             try {
-                let email = input;
-                if (!input.includes('@')) {
-                    const usersSnapshot = await db.ref('users').once('value');
-                    const users = usersSnapshot.val();
-                    if (users) {
-                        const foundUser = Object.values(users).find(u => u.username === input);
-                        if (foundUser) email = foundUser.email;
-                    }
-                }
-                
                 const userCredential = await auth.signInWithEmailAndPassword(email, password);
                 const user = userCredential.user;
                 const snapshot = await db.ref(`users/${user.uid}`).once('value');
@@ -407,7 +397,7 @@
                 }
                 
                 if (email === ADMIN_EMAIL && password === ADMIN_PASSWORD) {
-                    await db.ref(`users/${user.uid}`).update({ isAdmin: true, verified: true });
+                    await db.ref(`users/${user.uid}`).update({ isAdmin: true, verified: 'blue' });
                 }
                 
                 window.location.href = 'index.html';
@@ -463,6 +453,9 @@
         
         async function loginWithGoogle() {
             const provider = new firebase.auth.GoogleAuthProvider();
+            const msgDiv = document.getElementById('loginMsg');
+            msgDiv.innerHTML = '<div class="spinner"></div> جاري تسجيل الدخول...';
+            
             try {
                 const result = await auth.signInWithPopup(provider);
                 const user = result.user;
@@ -488,7 +481,7 @@
                 
                 window.location.href = 'index.html';
             } catch (error) {
-                document.getElementById('loginMsg').textContent = error.message;
+                msgDiv.textContent = error.message;
             }
         }
         
@@ -496,6 +489,7 @@
             await loginWithGoogle();
         }
         
+        // Check if already logged in
         auth.onAuthStateChanged((user) => {
             if (user) {
                 window.location.href = 'index.html';
